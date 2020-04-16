@@ -11,13 +11,7 @@
 // Имя устройства
 static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 
-  // Коды универсальных команд:
-static constexpr uint8_t cmd_nop      = 0x00; // нет операции
-static constexpr uint8_t cmd_err      = 0x01; // ошибка приема пакета
-static constexpr uint8_t cmd_echo     = 0x02; // передать эхо
-static constexpr uint8_t cmd_info     = 0x03; // передать информацию об устройстве
-//static constexpr uint8_t cmd_setaddr  = 0x04; // установить адрес
-//static constexpr uint8_t cmd_getaddr  = 0x05; // прочитать адрес
+
 
     // Коды целевых команд:
 static constexpr uint8_t cmd_power_on = 0x20; // 
@@ -33,7 +27,7 @@ extern char     RxDat[frame];   //+ массив принятых данных
 extern char     TxDat[frame];   //+ массив данных для передачи
 
 
-
+extern uint8_t Command;    // код команды на выполнение   // Test
 
 uint8_t cmd = cmd_nop;
 
@@ -46,7 +40,8 @@ void doErr();
 void doCommand()
 {
 
-//cmd = cmd_err;
+Command = cmd_err;
+cmd = cmd_err;           // Test 
 
   if( cmd != cmd_nop)
   {
@@ -79,7 +74,7 @@ void doCommand()
       case cmd_info :
         doInfo();
         #ifdef DEBUG_COMMANDS
-          SerialUSB.println("Info done");
+          SerialUSB.print("Info done N= ");
         #endif
       break;
 

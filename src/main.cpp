@@ -7,7 +7,8 @@
     View detail for Atmel AT11628: SAM D21 SERCOM I2C Configuration
 */
 
-#include"board/mpins.h"
+#include "board/mpins.h"
+#include "wake/wake.h"
 #include "commands.h"
 
 #include <Arduino.h>            // N. порядок не нарушать!
@@ -24,7 +25,7 @@ void setup()
   // инициализация UART порта ( D0:PA11/UART-RX, D1:PA10/UART-TX )
   Serial1.begin(115200);
 
-
+  wakeInit( 0x00 );           // Без адреса
 
 
 }
@@ -44,7 +45,7 @@ void loop()
         SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX);
       #endif
     }
-    delay(100);
+    delay(1000);
     doCommand();       // обмен с ESP
   }
 }
