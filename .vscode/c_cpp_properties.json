@@ -8,10 +8,12 @@
             "includePath": [
                 "e:/GitHub/MySERCOM/include",
                 "e:/GitHub/MySERCOM/src",
+                "e:/GitHub/MySERCOM/lib/FastPID/src",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/cores/arduino",
                 "C:/Users/OLMORO/.platformio/packages/framework-cmsis/CMSIS/Include",
                 "C:/Users/OLMORO/.platformio/packages/framework-cmsis-atmel/CMSIS/Device/ATMEL",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/variants/arduino_zero",
+                "e:/GitHub/MySERCOM/.pio/libdeps/zeroUSB/FastPID_ID5220/src",
                 "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13",
                 "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13@1.6.1",
                 "C:/Users/OLMORO/.platformio/lib/Adafruit SSD1306_ID135",
@@ -42,10 +44,12 @@
                 "path": [
                     "e:/GitHub/MySERCOM/include",
                     "e:/GitHub/MySERCOM/src",
+                    "e:/GitHub/MySERCOM/lib/FastPID/src",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/cores/arduino",
                     "C:/Users/OLMORO/.platformio/packages/framework-cmsis/CMSIS/Include",
                     "C:/Users/OLMORO/.platformio/packages/framework-cmsis-atmel/CMSIS/Device/ATMEL",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/variants/arduino_zero",
+                    "e:/GitHub/MySERCOM/.pio/libdeps/zeroUSB/FastPID_ID5220/src",
                     "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13",
                     "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13@1.6.1",
                     "C:/Users/OLMORO/.platformio/lib/Adafruit SSD1306_ID135",
@@ -86,6 +90,7 @@
                 "USB_MANUFACTURER=\"Arduino\"",
                 "WEMOS",
                 "DEBUG_COMMANDS",
+                "DEBUG_PID",
                 ""
             ],
             "intelliSenseMode": "clang-x64",

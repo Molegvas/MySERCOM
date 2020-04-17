@@ -17,20 +17,26 @@ static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 static constexpr uint8_t cmd_power_on = 0x20; // 
 static constexpr uint8_t cmd_probe    = 0x30; // 
 
+
     // Переменные - уточнить типы  
-extern char     RxNbt;          //+ принятое количество байт в пакете
-extern char     RxDat[frame];   //+ массив принятых данных
-//extern uint8_t  Command;        // код команды на выполнение
+extern char     rxNbt;          //+ принятое количество байт в пакете
+extern char     rxDat[frame];   //+ массив принятых данных
+extern uint8_t  command;        // код команды на выполнение
 
 //extern char     TxCmd;          // команда, передаваемая в пакете
-//extern char     TxNbt;          // количество байт данных в пакете
-extern char     TxDat[frame];   //+ массив данных для передачи
+extern char     txNbt;          // количество байт данных в пакете
+extern char     txDat[frame];   //+ массив данных для передачи
 
 
-extern uint8_t Command;    // код команды на выполнение   // Test
+
+uint16_t adcVoltage = 0x0123;  // extern
+uint16_t adcCurrent = 0x8081;  // extern
+
+
 
 uint8_t cmd = cmd_nop;
 
+void doProbe();
 void doInfo();
 void doEcho();
 void doErr();
@@ -40,8 +46,8 @@ void doErr();
 void doCommand()
 {
 
-Command = cmd_err;
-cmd = cmd_err;           // Test 
+//command = cmd_probe;
+//cmd = cmd_probe;           // Test 
 
   if( cmd != cmd_nop)
   {
@@ -49,7 +55,7 @@ cmd = cmd_err;           // Test
     {
       
       case cmd_probe :
-        // doProbe();
+        doProbe();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Probe done");
         #endif
@@ -93,28 +99,28 @@ void doInfo()
 
   for( i = 0; i < frame && ch; i++ )
   {
-  ch = TxDat[i] = Info[i];
+  ch = txDat[i] = Info[i];
   //ch = Info[i]; 
 
   #ifdef DEBUG_WAKE
-      Serial.print( ch );
+    Serial.print( ch );
   #endif
   }
   //txReplay( i, Tx_Dat[0] );
-  txReplay( i, TxDat[0] );
+  txReplay( i, txDat[0] );
 }
 
 // передать эхо
 void doEcho()
 {
   //for( i = 0; i < Rx_Nbt && i < MWake::frame; i++ )
-  for( int i = 0; i < RxNbt && i < frame; i++ )
+  for( int i = 0; i < rxNbt && i < frame; i++ )
   //Tx_Dat[i] = Rx_Dat[i];
-  TxDat[i] = RxDat[i];
+  txDat[i] = rxDat[i];
   //txReplay( Rx_Nbt, Tx_Dat[0] );
-  txReplay( RxNbt, TxDat[0] );
+  txReplay( rxNbt, txDat[0] );
   #ifdef DEBUG_WAKE
-      Serial.print("команда эхо = "); Serial.print( RxNbt );
+    Serial.print("команда эхо = "); Serial.print( rxNbt );
   #endif
 }
 
@@ -123,6 +129,23 @@ void doErr()
 {
   txReplay(1, err_tx);
   #ifdef DEBUG_WAKE
-      Serial.println("обработка ошибки");
+    Serial.println("обработка ошибки");
+  #endif
+}
+
+// отправить данные измерений
+void doProbe()
+{
+  txDat[0] = ( adcVoltage >> 8) & 0xFF; // Hi
+  txDat[1] =   adcVoltage & 0xFF;       // Lo
+  txDat[2] = ( adcCurrent >> 8) & 0xFF; // Hi
+  txDat[3] =   adcCurrent & 0xFF;       // Lo
+  txDat[4] =   0x77;      // mcr1
+  txDat[5] =   0x88;      // mcr2
+
+  txNbt = 6;
+  txReplay( txNbt, txDat[0] );
+  #ifdef DEBUG_WAKE
+    Serial.println("измерения");
   #endif
 }

@@ -7,12 +7,12 @@
 #include "wake/wake.h"
 
 
-char          Rx_Sta;        // состояние процесса приема пакета
-char          Rx_Pre;        // предыдущий принятый байт
-char          Rx_Add;        // адрес, с которым сравнивается принятый
-char          Rx_Cmd;        // принятая команда
-char          Rx_Crc;        // контрольная сумма принимаемого пакета
-unsigned char Rx_Ptr;        // указатель на массив принимаемых данных
+char          rxSta;        // состояние процесса приема пакета
+char          rxPre;        // предыдущий принятый байт
+char          rxAdd;        // адрес, с которым сравнивается принятый
+char          rxCmd;        // принятая команда
+char          rxCrc;        // контрольная сумма принимаемого пакета
+unsigned char rxPtr;        // указатель на массив принимаемых данных
 
 char          txSta;        // состояние процесса передачи пакета
 char          txPre;        // предыдущий переданный байт
@@ -30,7 +30,7 @@ enum { WAIT_FEND,    //ожидание приема FEND == 0
       WAIT_CARR };   //ожидание несущей
 
 //TX process states:
-enum { send_idle,     //состояние бездействия == 0
+enum {  send_idle,     //состояние бездействия == 0
         send_addr,     //передача адреса
         send_cmd,      //передача команды
         send_nbt,      //передача количества байт в пакете
@@ -39,22 +39,22 @@ enum { send_idle,     //состояние бездействия == 0
         send_end };    //окончание передачи пакета nu?
 
 // Переменные - уточнить типы  
-char    RxNbt;         // принятое количество байт в пакете
-char    RxDat[frame];  // массив принятых данных
-uint8_t Command;    // код команды на выполнение
+char    rxNbt;         // принятое количество байт в пакете
+char    rxDat[frame];  // массив принятых данных
+uint8_t command;    // код команды на выполнение
 
-char    TxCmd;         // команда, передаваемая в пакете
-uint8_t TxNbt;         // количество байт данных в пакете
-char    TxDat[frame];  // массив данных для передачи
+char    txCmd;         // команда, передаваемая в пакете
+uint8_t txNbt;         // количество байт данных в пакете
+char    txDat[frame];  // массив данных для передачи
 
 
 void wakeInit( uint8_t addr )
 {
-  Rx_Add  = addr;                      // адрес на прием
+  rxAdd  = addr;                      // адрес на прием
   txAdd   = addr;                      // адрес на передачу
-  Rx_Sta  = WAIT_FEND;                 // ожидание пакета
+  rxSta  = WAIT_FEND;                 // ожидание пакета
   txSta   = send_idle;                 // ничего пока не передаем
-  Command = cmd_nop;                   // нет команды на выполнение
+  command = cmd_nop;                   // нет команды на выполнение
 }
 
 
@@ -66,6 +66,136 @@ void doCrc8(char b, char *crc)
     if((b ^ *crc) & 1) *crc = ((*crc ^ 0x18) >> 1) | 0x80;
      else *crc = (*crc >> 1) & ~0x80;
 }
+
+// Чение данных порта
+void wakeRead()
+{
+	char error_flags = 0; //???  //MDR_UART2->RSR_ECR;//чтение флагов ошибок
+  //
+  char dataByte = Serial1.read();    // считывает все!!
+
+
+/*   надо:
+int readBytes(* buf, len)
+    Считывает байты, поступающие на последовательный порт, и записывает их в буфер. 
+    Прекращает работу после приема заданного количества байтов или в случае тайм-аута. 
+    Возвращает количество принятых байтов. Тайм-аут задается функцией setTimeout().
+
+setTimeout(long time)
+    Задает время тайм-аута для функции readBytes(). 
+    Время time указывается в мс, по умолчанию оно равно 1000 мс.
+*/
+SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
+  char Pre = rxPre;                  // сохранение старого пре-байта
+
+  if( error_flags )                   //е сли обнаружены ошибки при приеме байта
+  {
+    rxSta = WAIT_FEND;               // ожидание нового пакета
+    command = cmd_err;                // сообщаем об ошибке
+    return;
+  }
+
+  if( dataByte == fend )              // если обнаружено начало фрейма,
+  {
+    rxPre = dataByte;                // то сохранение пре-байта,
+    rxCrc = crc_init;                // инициализация CRC,
+    rxSta = WAIT_ADDR;               // сброс указателя данных,
+    doCrc8( dataByte, &rxCrc );      // обновление CRC,
+    return;                           // выход
+  }
+
+  if( rxSta == WAIT_FEND )           // -----> если ожидание FEND,
+    return;                           // то выход
+
+  rxPre = dataByte;                  // обновление пре-байта
+  if( Pre == fesc )                   // если пре-байт равен FESC,
+  {
+    if( dataByte == tfesc )           // а байт данных равен TFESC,
+      dataByte = fesc;                // то заменить его на FESC
+    else if( dataByte == tfend )      // если байт данных равен TFEND,
+           dataByte = fend;           // то заменить его на FEND
+         else
+         {
+           rxSta = WAIT_FEND;        // для всех других значений байта данных,
+           command = cmd_err;         // следующего за FESC, ошибка
+           return;
+         }
+  }
+  else
+  {
+    if( dataByte == fesc )            // если байт данных равен FESC, он просто
+      return;                         // запоминается в пре-байте
+  }
+
+  switch( rxSta )
+  {
+  case WAIT_ADDR:                     // -----> ожидание приема адреса
+    {
+      if( dataByte & 0x80 )           // если dataByte.7 = 1, то это адрес
+      {
+        dataByte = dataByte & 0x7F;   //обнуляем бит 7, получаем истинный адрес
+        if( !dataByte || dataByte == rxAdd )   // если нулевой или верный адрес,
+        {
+          doCrc8( dataByte, &rxCrc );  // то обновление CRC и
+          rxSta = WAIT_CMD;          // переходим к приему команды
+          break;
+        }
+        rxSta = WAIT_FEND;           // адрес не совпал, ожидание нового пакета
+        break;
+      }                               // если dataByte.7 = 0, то
+      rxSta = WAIT_CMD;              // сразу переходим к приему команды
+    }
+  case WAIT_CMD:                      // -----> ожидание приема команды
+    {
+      if( dataByte & 0x80 )           // проверка бита 7 данных
+      {
+        rxSta = WAIT_FEND;           // если бит 7 не равен нулю,
+        command = cmd_err;            // то ошибка
+        break;
+      }
+      rxCmd = dataByte;              // сохранение команды
+      doCrc8( dataByte, &rxCrc );    // обновление CRC
+      rxSta = WAIT_NBT;              // переходим к приему количества байт
+      break;
+    }
+  case WAIT_NBT:                      // -----> ожидание приема количества байт
+    {
+      if( dataByte > frame )          // если количество байт > FRAME,
+      {
+        rxSta = WAIT_FEND;
+        command = cmd_err;            // то ошибка
+        break;
+      }
+      rxNbt = dataByte;
+      doCrc8( dataByte, &rxCrc );    // обновление CRC
+      rxPtr = 0;                     // обнуляем указатель данных
+      rxSta = WAIT_DATA;             // переходим к приему данных
+      break;
+    }
+  case WAIT_DATA:                     // -----> ожидание приема данных
+    {
+      if( rxPtr < rxNbt )           // если не все данные приняты,
+      {
+        rxDat[rxPtr++] = dataByte;  // то сохранение байта данных,
+        doCrc8( dataByte, &rxCrc );  // обновление CRC
+        break;
+      }
+      if(dataByte != rxCrc)          // если приняты все данные, то проверка CRC
+      {
+        rxSta = WAIT_FEND;           // если CRC не совпадает,
+        command = cmd_err;            // то ошибка
+        break;
+      }
+      rxSta = WAIT_FEND;             // прием пакета завершен,
+      command = rxCmd;               // загрузка команды на выполнение
+      break;
+    }
+  }
+}
+
+
+
+
 
 
 // Передача пакета
@@ -104,21 +234,21 @@ void wakeWrite()
     }
   case send_cmd:                          // -----> передача команды
     {
-      dataByte = TxCmd & 0x7F;
+      dataByte = txCmd & 0x7F;
       txSta = send_nbt;
       break;
     }
   case send_nbt:                          // -----> передача количества байт
     {
-      dataByte = TxNbt;
+      dataByte = txNbt;
       txSta = send_data;
       txPtr = 0;                          // обнуление указателя данных для передачи
       break;
     }
   case send_data:                         // -----> передача данных
     {
-      if(txPtr < TxNbt)
-        dataByte = TxDat[ txPtr++ ];  
+      if(txPtr < txNbt)
+        dataByte = txDat[ txPtr++ ];  
       else
       {
         dataByte = txCrc;                 // передача CRC
@@ -176,9 +306,9 @@ void wakeStartWrite()
 // передача ответа на команду 
 void txReplay(char n, char err)
 {
-  TxNbt = n;                      // количество байт
-  TxDat[0] = err;                 // код ошибки
-  TxCmd = Command;                // команда
+  txNbt = n;                      // количество байт
+  txDat[0] = err;                 // код ошибки
+  txCmd = command;                // команда
   wakeStartWrite();               // инициализация передачи
-  Command = cmd_nop;              // команда обработана
+  command = cmd_nop;              // команда обработана
 }

@@ -10,6 +10,7 @@
 #include "board/mpins.h"
 #include "wake/wake.h"
 #include "commands.h"
+#include "power/power_reg.h"
 
 #include <Arduino.h>            // N. порядок не нарушать!
 #include "wiring_private.h"     // N=1.
@@ -32,20 +33,23 @@ void setup()
 
 void loop() 
 {
-  if( 0 )
+  if( 1 )
   {   // Измерение готово
       // doMeasure();   // считать, преобразовать, задать следующее и запустить
-      //  doPid();      // исполнять, если задано
+      delay(1000);
+      doPid();      // исполнять, если задано
   }
   else
   {
     if (Serial1.available()) 
     {
-      #ifdef DEBUG_COMMANDS
-        SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX);
-      #endif
+      wakeRead();
+      
+      // #ifdef DEBUG_COMMANDS
+      //   SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX);
+      // #endif
     }
-    delay(1000);
+    delay(100);
     doCommand();       // обмен с ESP
   }
 }

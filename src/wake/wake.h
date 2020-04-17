@@ -33,7 +33,7 @@ static constexpr uint8_t cmd_echo = 0x02; // передать эхо
 static constexpr uint8_t cmd_info = 0x03; // передать информацию об устройстве
 
 void wakeInit( uint8_t addr );
-
+void wakeRead();
 void txReplay(char n, char err);          // передача ответа на команду
 
 #endif //!_WAKE_H_
