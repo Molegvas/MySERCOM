@@ -90,7 +90,7 @@
                 "USB_MANUFACTURER=\"Arduino\"",
                 "WEMOS",
                 "DEBUG_COMMANDS",
-                "DEBUG_PID",
+                "DEBUG_ADC",
                 ""
             ],
             "intelliSenseMode": "clang-x64",

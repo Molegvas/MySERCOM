@@ -8,7 +8,7 @@
 #include "stdint.h"
 
 
-
+void initPid();
 void doPid();
 
 bool setCoefficients( float kp, float ki, float kd, float hz ); 

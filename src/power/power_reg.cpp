@@ -14,7 +14,7 @@ float Kp =  0.1;
 float Ki =  0.5;
 float Kd =  0.0;
 float Hz = 10.0; 
-int output_bits = 10; 
+int output_bits = 10; // Set analog out resolution to max, 10-bits
 bool output_signed = false; 
 
 FastPID myPID( Kp, Ki, Kd, Hz, output_bits, output_signed );
@@ -22,7 +22,10 @@ FastPID myPID( Kp, Ki, Kd, Hz, output_bits, output_signed );
 uint16_t setpoint = 512;
 uint16_t feedback = 511;
 
-
+void initPid()
+{
+  analogWriteResolution( output_bits );
+}
 
 void doPid()
 {

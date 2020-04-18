@@ -11,6 +11,7 @@
 #include "wake/wake.h"
 #include "commands.h"
 #include "power/power_reg.h"
+#include "adc/adc.h"
 
 #include <Arduino.h>            // N. порядок не нарушать!
 #include "wiring_private.h"     // N=1.
@@ -27,6 +28,7 @@ void setup()
   Serial1.begin(115200);
 
   wakeInit( 0x00 );           // Без адреса
+  initAdc();
 
 
 }
@@ -35,8 +37,8 @@ void loop()
 {
   if( 1 )
   {   // Измерение готово
-      // doMeasure();   // считать, преобразовать, задать следующее и запустить
-      delay(1000);
+      doMeasure();   // считать, преобразовать, задать следующее и запустить
+      //delay(1000);
       doPid();      // исполнять, если задано
   }
   else
