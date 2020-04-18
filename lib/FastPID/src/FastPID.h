@@ -16,7 +16,8 @@
 /*
   A fixed point PID controller with a 32-bit internal calculation pipeline.
 */
-class FastPID {
+class FastPID 
+{
 
 public:
   FastPID() 

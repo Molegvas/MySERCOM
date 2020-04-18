@@ -20,7 +20,7 @@ bool output_signed = false;
 FastPID myPID( Kp, Ki, Kd, Hz, output_bits, output_signed );
 
 uint16_t setpoint = 512;
-uint16_t feedback =   0;
+uint16_t feedback = 511;
 
 
 
@@ -45,7 +45,24 @@ void doPid()
   SerialUSB.println(output); 
 #endif
 
+}
 
+bool setCoefficients( float kp, float ki, float kd, float hz )
+{
+  return myPID.setCoefficients( kp, ki, kd, hz);
+} 
 
+bool setOutputConfig( int bits, bool sign )
+{
+  return myPID.setOutputConfig( bits, sign );
+}
 
+bool setOutputRange( int16_t min, int16_t max )
+{
+  return myPID.setOutputRange( min, max );
+}
+
+bool configure( float kp, float ki, float kd, float hz, int bits, bool sign )
+{
+  return myPID.configure( kp, ki, kd, hz, bits, sign );
 }

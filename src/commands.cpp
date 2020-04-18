@@ -5,6 +5,8 @@
 
 #include "commands.h"
 #include "wake/wake.h"
+        #include <FastPID.h>
+#include "power/power_reg.h"
 #include "stdint.h"
 #include <Arduino.h>
 
@@ -17,6 +19,12 @@ static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 static constexpr uint8_t cmd_power_on = 0x20; // 
 static constexpr uint8_t cmd_probe    = 0x30; // 
 
+    // ПИД-регулятор
+static constexpr uint8_t cmd_set_coefficients   = 0x40; // 
+static constexpr uint8_t cmd_set_output_config  = 0x41; // 
+static constexpr uint8_t cmd_set_output_range   = 0x42; // 
+static constexpr uint8_t cmd_configure          = 0x43; // 
+
 
     // Переменные - уточнить типы  
 extern char     rxNbt;          //+ принятое количество байт в пакете
@@ -28,7 +36,6 @@ extern char     txNbt;          // количество байт данных в
 extern char     txDat[frame];   //+ массив данных для передачи
 
 
-
 uint16_t adcVoltage = 0x0123;  // extern
 uint16_t adcCurrent = 0x8081;  // extern
 
@@ -36,12 +43,21 @@ uint16_t adcCurrent = 0x8081;  // extern
 
 uint8_t cmd = cmd_nop;
 
+void doSetCoefficients();
+void doSetOutputConfig();
+void doSetOutputRange();
+void doConfigure();
+
 void doProbe();
 void doInfo();
 void doEcho();
 void doErr();
 
-
+uint16_t get16(int i)
+{
+  uint16_t par = rxDat[0] << 8;
+  return(par |= rxDat[1]); 
+}
 
 void doCommand()
 {
@@ -62,6 +78,34 @@ void doCommand()
       break;
 
       //case cmd_ ...
+
+      case cmd_set_coefficients :
+        doSetCoefficients();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Coefficients done");
+        #endif
+      break;
+
+      case cmd_set_output_config :
+        doSetOutputConfig();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Output Config done");
+        #endif
+      break;
+
+      case cmd_set_output_range :
+        doSetOutputRange();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Output Range done");
+        #endif
+      break;
+
+      case cmd_configure :
+        doConfigure();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Configure done");
+        #endif
+      break;
 
       case cmd_err :
         doErr();
@@ -148,4 +192,73 @@ void doProbe()
   #ifdef DEBUG_WAKE
     Serial.println("измерения");
   #endif
+}
+
+void doSetCoefficients()
+{
+  if( rxNbt == 8 )
+  {
+    float kp = (float)get16(0) / 100;
+    float ki = (float)get16(2) / 100;
+    float kd = (float)get16(4) / 100;
+    float hz = (float)get16(6) / 100;
+    //bool err = myPID.setCoefficients( kp, ki, kd, hz);
+    bool err = setCoefficients( kp, ki, kd, hz );
+    txReplay( 1, err );       // Ошибка параметра
+  }
+  else
+  {
+    txReplay(1, err_tx);      // Ошибка протокола
+  }
+}
+
+void doSetOutputConfig()
+{
+  if( rxNbt == 3 )
+  {
+    uint16_t bits = get16(0);
+    bool sign     = rxDat[2];
+    bool err = setOutputConfig( (int)bits, sign );
+    txReplay( 1, err );
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
+
+}
+
+void doSetOutputRange()
+{
+  if( rxNbt == 4 )
+  {
+    int16_t min = get16(0);
+    int16_t max = get16(2);
+    bool err = setOutputRange( min, max );   //(int16_t min, int16_t max);
+    txReplay( 1, err );
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
+
+}
+
+void doConfigure()
+{
+  if( rxNbt == 8 )
+  {
+    float kp = (float)get16(0) / 100;
+    float ki = (float)get16(2) / 100;
+    float kd = (float)get16(4) / 100;
+    float hz = (float)get16(6) / 100;
+    int bits = 16;
+    bool sign = false;
+    bool err = configure( kp, ki, kd, hz, bits, sign );
+    txReplay( 1, err );  
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
 }
