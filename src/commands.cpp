@@ -25,6 +25,14 @@ static constexpr uint8_t cmd_set_output_config  = 0x41; //
 static constexpr uint8_t cmd_set_output_range   = 0x42; // 
 static constexpr uint8_t cmd_configure          = 0x43; // 
 
+    // АЦП - настройки
+static constexpr uint8_t cmd_set_adc_bat        = 0x52;
+static constexpr uint8_t cmd_set_adc_shunt      = 0x53;
+static constexpr uint8_t cmd_set_adc_rtu        = 0x54;
+uint8_t res[]  = { 12, 12, 12, 12};
+uint8_t mode[] = { 0, 0, 0, 0 }; // conv to eAnalogReference, 0 = AR_DEFAULT
+
+
 
     // Переменные - уточнить типы  
 extern char     rxNbt;          //+ принятое количество байт в пакете
@@ -52,6 +60,10 @@ void doProbe();
 void doInfo();
 void doEcho();
 void doErr();
+
+void doAdcBat();
+void doAdcShunt();
+void doAdcRtu();
 
 uint16_t get16(int i)
 {
@@ -127,6 +139,28 @@ void doCommand()
           SerialUSB.print("Info done N= ");
         #endif
       break;
+
+      case cmd_set_adc_bat :
+        doAdcBat();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.print("ADC Bat done ");
+        #endif
+      break;
+
+      case cmd_set_adc_shunt :
+        doAdcShunt();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.print("ADC Shunt done ");
+        #endif
+      break;
+
+      case cmd_set_adc_rtu :
+        doAdcRtu();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.print("ADC Rtu done ");
+        #endif
+      break;
+
 
       default : 
       ;
@@ -262,3 +296,31 @@ void doConfigure()
     txReplay(1, err_tx);
   }
 }
+
+// Команды настроек АЦП
+void doAdcBat()
+{
+    if( rxNbt == 4 )
+  {
+    uint8_t err   = 0x00;
+    uint8_t i     = rxDat[0];    
+    uint8_t _res   = rxDat[1];                              // в инициализацию каждого измерителя
+    uint8_t _mode  = rxDat[2];
+    if( i     > 3 ) err |= 0x51;   // Ошибка выбора канала измерения
+    if( _res  > 5 ) err |= 0x52;   // Ошибка выбора Resolution  (16?)
+    if( _mode > 6 ) err |= 0x54;   // Ошибка выбора Ref или Gain
+    if( !err )
+    {
+      res[i]  = _res;
+      mode[i] = _mode;
+    }
+    txReplay( 1, err );
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
+}
+
+void doAdcShunt(){}
+void doAdcRtu(){}

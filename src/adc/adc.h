@@ -11,4 +11,9 @@ void initAdc();
 void doMeasure(); 
 
 
+
+
+
+
+
 #endif  //!_ADC_H_
