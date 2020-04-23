@@ -18,8 +18,8 @@ int output_bits = 10; // Set analog out resolution to max, 10-bits
 bool output_signed = false; 
 
 uint16_t output       = 0x0000;
-bool     _pidStatus   = false;    // false - состояние, при котором DAC выдает заданное напряжение 
-uint8_t  _pidFunction = 0;        // 0-1-2 - задать напряжение, ток заряда или ток разряда
+bool     pidStatus   = false;    // false - состояние, при котором DAC выдает заданное напряжение 
+uint8_t  pidFunction = 0;        // 0-1-2 - задать напряжение, ток заряда или ток разряда
 // pidReference
 
 FastPID myPID( Kp, Ki, Kd, Hz, output_bits, output_signed );
@@ -34,7 +34,7 @@ void initPid()
 
 void doPid()
 {
-  if( _pidStatus )
+  if( pidStatus )
   {
     uint32_t before;
     uint32_t after; 

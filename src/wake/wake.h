@@ -1,7 +1,7 @@
 /*
-
-
-*/
+ *
+ *
+ */
 
 #ifndef _WAKE_H_
 #define _WAKE_H_
@@ -15,7 +15,6 @@ static constexpr uint8_t tfend    = 0xDC; // Transposed Frame END
 static constexpr uint8_t tfesc    = 0xDD; // Transposed Frame ESCape
 static constexpr uint8_t crc_init = 0xDE; // Initial CRC value
 static constexpr uint8_t frame    = 0xFF; // Максимальная длина пакета 255 (полезных данных)
-
 
 // Коды ошибок:
 static constexpr uint8_t err_no   = 0x00; // no error
@@ -32,9 +31,8 @@ static constexpr uint8_t cmd_err  = 0x01; // ошибка приема паке�
 static constexpr uint8_t cmd_echo = 0x02; // передать эхо
 static constexpr uint8_t cmd_info = 0x03; // передать информацию об устройстве
 
-void wakeInit( uint8_t addr );
+void wakeInit( uint8_t addr, long time );
 void wakeRead();
-//bool commandRead();
 void txReplay(char n, char err);          // передача ответа на команду
 
 #endif //!_WAKE_H_

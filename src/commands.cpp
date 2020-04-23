@@ -58,8 +58,8 @@ extern char     txDat[frame];   //+ массив данных для перед�
 uint16_t adcVoltage = 0x0123;  // extern
 uint16_t adcCurrent = 0x8081;  // extern
 
-extern bool     _pidStatus;
-extern uint8_t  _pidFunction;
+extern bool     pidStatus;
+extern uint8_t  pidFunction;
 extern uint16_t setpoint;
 
 uint8_t cmd = cmd_nop;
@@ -81,20 +81,19 @@ void doAdcRtu();
 
 uint16_t get16(int i)
 {
-  uint16_t par = rxDat[0] << 8;
-  return(par |= rxDat[1]); 
+  uint16_t par  = rxDat[i] << 8;
+  return(  par |= rxDat[i+1]); 
 }
 
 void doCommand()
 {
-
-//command = cmd_probe;
-cmd = command;
+  cmd = command;
 
   if( cmd != cmd_nop)
   {
-
-SerialUSB.print(" command -> 0x"); SerialUSB.println(cmd);
+    #ifdef DEBUG_COMMANDS
+      SerialUSB.print(" command -> 0x"); SerialUSB.println(cmd);
+    #endif
 
     switch( cmd )
     {
@@ -258,15 +257,35 @@ void doPidStopGo()
 {
   if( rxNbt == 8 )
   {
-     _pidStatus   = rxDat[0];    // false - состояние, при котором DAC выдает заданное напряжение 
-     _pidFunction = rxDat[1];        // 0-1-2 - задать напряжение, ток заряда или ток разряда
-     // проверить на корректность <3
-    setpoint = get16(2);
-    analogWrite( MPins::dac_pin, setpoint << 2 );
-    int16_t min = get16(4);
-    int16_t max = get16(6);
-    bool err = setOutputRange( min, max );  // с учетом PARAM_MULT !!
+    bool err = false;
+
+    bool    _pidStatus   = rxDat[0];    // false - состояние, при котором DAC выдает заданное напряжение 
+    uint8_t _pidFunction = rxDat[1];    // 0-1-2 - задать напряжение, ток заряда или ток разряда
+
+    if( _pidFunction > 3 ) err |= true;  // проверить на корректность <3
+    uint16_t _setpoint = get16(2);  
+    int16_t _min = get16(4);
+    int16_t _max = get16(6);
+    err |= setOutputRange( _min, _max ); // с учетом PARAM_MULT !!
+
+    #ifdef DEBUG_COMMANDS
+      SerialUSB.print("  0: 0x"); SerialUSB.println( _pidStatus, HEX );
+      SerialUSB.print("  1: 0x"); SerialUSB.println( _pidFunction, HEX );
+      SerialUSB.print("2,3: 0x"); SerialUSB.println( _setpoint, HEX );
+      SerialUSB.print("4,5: 0x"); SerialUSB.println( _min, HEX );
+      SerialUSB.print("6,7: 0x"); SerialUSB.println( _max, HEX );
+      if( err )                   SerialUSB.println( "error" );
+    #endif
     
+    if(!err)
+    {
+      pidStatus   = _pidStatus;
+      pidFunction = _pidFunction;   
+      setpoint    = _setpoint;
+      analogWrite( MPins::dac_pin, setpoint << 2 );
+    }
+
+    txReplay( 1, err );       // true - ошибка любого параметра
   }
   else
   {
