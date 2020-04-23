@@ -50,9 +50,9 @@ char    txDat[frame];  // массив данных для передачи
 
 void wakeInit( uint8_t addr )
 {
-  rxAdd  = addr;                      // адрес на прием
+  rxAdd   = addr;                      // адрес на прием
   txAdd   = addr;                      // адрес на передачу
-  rxSta  = WAIT_FEND;                 // ожидание пакета
+  rxSta   = WAIT_FEND;                 // ожидание пакета
   txSta   = send_idle;                 // ничего пока не передаем
   command = cmd_nop;                   // нет команды на выполнение
 }
@@ -67,30 +67,21 @@ void doCrc8(char b, char *crc)
      else *crc = (*crc >> 1) & ~0x80;
 }
 
-// Чение данных порта
+
+// Чение данных порта, при обнаружении конца пакета
+// устанавливает ненулевой код требующей обработки команды.
 void wakeRead()
 {
-	char error_flags = 0; //???  //MDR_UART2->RSR_ECR;//чтение флагов ошибок
-  //
-  char dataByte = Serial1.read();    // считывает все!!
+  char error_flags = 0;               // чтение флагов ошибок UART - пока нет
+  
+  uint8_t dataByte;
+  Serial1.readBytes( &dataByte, 1 );  // чтение одного байта с удалением из приемного буфера
+    // SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
+  char Pre = rxPre;                   // сохранение старого пре-байта
 
-
-/*   надо:
-int readBytes(* buf, len)
-    Считывает байты, поступающие на последовательный порт, и записывает их в буфер. 
-    Прекращает работу после приема заданного количества байтов или в случае тайм-аута. 
-    Возвращает количество принятых байтов. Тайм-аут задается функцией setTimeout().
-
-setTimeout(long time)
-    Задает время тайм-аута для функции readBytes(). 
-    Время time указывается в мс, по умолчанию оно равно 1000 мс.
-*/
-SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
-  char Pre = rxPre;                  // сохранение старого пре-байта
-
-  if( error_flags )                   //е сли обнаружены ошибки при приеме байта
+  if( error_flags )                   // если обнаружены ошибки при приеме байта
   {
-    rxSta = WAIT_FEND;               // ожидание нового пакета
+    rxSta = WAIT_FEND;                // ожидание нового пакета
     command = cmd_err;                // сообщаем об ошибке
     return;
   }
@@ -129,7 +120,7 @@ SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
 
   switch( rxSta )
   {
-  case WAIT_ADDR:                     // -----> ожидание приема адреса
+    case WAIT_ADDR:                     // -----> ожидание приема адреса
     {
       if( dataByte & 0x80 )           // если dataByte.7 = 1, то это адрес
       {
@@ -145,7 +136,7 @@ SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
       }                               // если dataByte.7 = 0, то
       rxSta = WAIT_CMD;              // сразу переходим к приему команды
     }
-  case WAIT_CMD:                      // -----> ожидание приема команды
+    case WAIT_CMD:                      // -----> ожидание приема команды
     {
       if( dataByte & 0x80 )           // проверка бита 7 данных
       {
@@ -158,7 +149,7 @@ SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
       rxSta = WAIT_NBT;              // переходим к приему количества байт
       break;
     }
-  case WAIT_NBT:                      // -----> ожидание приема количества байт
+    case WAIT_NBT:                      // -----> ожидание приема количества байт
     {
       if( dataByte > frame )          // если количество байт > FRAME,
       {
@@ -172,7 +163,7 @@ SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
       rxSta = WAIT_DATA;             // переходим к приему данных
       break;
     }
-  case WAIT_DATA:                     // -----> ожидание приема данных
+    case WAIT_DATA:                     // -----> ожидание приема данных
     {
       if( rxPtr < rxNbt )           // если не все данные приняты,
       {
@@ -180,6 +171,10 @@ SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
         doCrc8( dataByte, &rxCrc );  // обновление CRC
         break;
       }
+
+      //SerialUSB.print("Crc ->0x"); SerialUSB.println( rxCrc, HEX );
+
+
       if(dataByte != rxCrc)          // если приняты все данные, то проверка CRC
       {
         rxSta = WAIT_FEND;           // если CRC не совпадает,
@@ -194,6 +189,36 @@ SerialUSB.print("Byte ->0x"); SerialUSB.println( dataByte, HEX );
 }
 
 
+  //char dataByte = Serial1.read();    // считывает все!!
+/*   надо:
+int readBytes(* buf, len)
+    Считывает байты, поступающие на последовательный порт, и записывает их в буфер. 
+    Прекращает работу после приема заданного количества байтов или в случае тайм-аута. 
+    Возвращает количество принятых байтов. Тайм-аут задается функцией setTimeout().
+
+setTimeout(long time)
+    Задает время тайм-аута для функции readBytes(). 
+    Время time указывается в мс, по умолчанию оно равно 1000 мс.
+*/
+
+// bool commandRead()
+// {  // // Буфер пуст, но не опустел в результате обработки
+//   // if( !Serial1.available() ) 
+//   // {
+//   //   return false;
+//   // }
+
+//   // // Если буфер не опустел - продолжить обработку
+//   // while ( Serial1.available() )
+//   // {
+    
+    
+    
+//   //   /* code */
+//   // }
+
+//   return true;
+// }
 
 
 

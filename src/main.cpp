@@ -35,23 +35,20 @@ void setup()
 
 void loop() 
 {
-  if( 1 )
+  if( 1)      // пока так
   {   // Измерение готово
-      doMeasure();   // считать, преобразовать, задать следующее и запустить
-      delay(500);
-      doPid();      // исполнять, если задано
+    doMeasure();   // считать, преобразовать, задать следующее и запустить
+    //delay(500);
+    doPid();      // исполнять, если задано
   }
-  else
+  
+  if( Serial1.available() )     // В буфере приема есть принятые байты, не факт, что пакет полный
   {
-    if (Serial1.available()) 
-    {
-      wakeRead();
-      
-      // #ifdef DEBUG_COMMANDS
-      //   SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX);
-      // #endif
-    }
-    delay(100);
-    doCommand();       // обмен с ESP
+    wakeRead();                 // Пока не принят весь пакет, время ожидания ограничено (пока 1с)
+    #ifdef DEBUG_COMMANDS
+      //SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX); // !! очистит буфер !!
+    #endif
   }
+  doCommand();                  // Если ненулевая, будет исполнена
+  //delay(10);
 }

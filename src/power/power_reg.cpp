@@ -17,6 +17,11 @@ float Hz = 10.0;
 int output_bits = 10; // Set analog out resolution to max, 10-bits
 bool output_signed = false; 
 
+uint16_t output       = 0x0000;
+bool     _pidStatus   = false;    // false - состояние, при котором DAC выдает заданное напряжение 
+uint8_t  _pidFunction = 0;        // 0-1-2 - задать напряжение, ток заряда или ток разряда
+// pidReference
+
 FastPID myPID( Kp, Ki, Kd, Hz, output_bits, output_signed );
 
 uint16_t setpoint = 512;
@@ -29,24 +34,43 @@ void initPid()
 
 void doPid()
 {
-  uint32_t before;
-  uint32_t after; 
-  before = micros(); 
-  uint16_t output = myPID.step(setpoint, feedback); 
-  after = micros(); 
+  if( _pidStatus )
+  {
+    uint32_t before;
+    uint32_t after; 
+    before = micros(); 
+    //uint16_t output = myPID.step(setpoint, feedback); 
+    output = myPID.step(setpoint, feedback); 
+    after = micros();
+ 
+    analogWrite( MPins::dac_pin, output );
 
-  analogWrite( MPins::dac_pin, output );
+    #ifdef DEBUG_PID
+    // SerialUSB.print("runtime: "); 
+    // SerialUSB.print(after - before); 
+    // SerialUSB.print(" sp: "); 
+    // SerialUSB.print(setpoint); 
+    // SerialUSB.print(" fb: "); 
+    // SerialUSB.print(feedback); 
+    // SerialUSB.print(" out: "); 
+    // SerialUSB.println(output); 
+    #endif
+  }
+  else
+  {
+    // output in millivolts
+output = 250;         // Test
+    //analogReference(AR_DEFAULT);
+    //DAC->CTRLB.reg = 0x40;  // ???use AVCC as the reference - DAC Off
+    analogWrite( MPins::dac_pin, ( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
+                // найти откуда /4 ?
+    #ifdef DEBUG_PID
+      SerialUSB.print(" out: "); 
+      SerialUSB.println(output); 
+    #endif
+  }
+  
 
-#ifdef DEBUG_PID
-  SerialUSB.print("runtime: "); 
-  SerialUSB.print(after - before); 
-  SerialUSB.print(" sp: "); 
-  SerialUSB.print(setpoint); 
-  SerialUSB.print(" fb: "); 
-  SerialUSB.print(feedback); 
-  SerialUSB.print(" out: "); 
-  SerialUSB.println(output); 
-#endif
 
 }
 

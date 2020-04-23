@@ -4,6 +4,7 @@
 */
 
 #include "commands.h"
+#include "board/mpins.h"
 #include "wake/wake.h"
         #include <FastPID.h>
 #include "power/power_reg.h"
@@ -13,17 +14,18 @@
 // Имя устройства
 static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 
-
+//bool _powerStatus = false;
 
     // Коды целевых команд:
 static constexpr uint8_t cmd_power_on = 0x20; // 
 static constexpr uint8_t cmd_probe    = 0x30; // 
 
     // ПИД-регулятор
-static constexpr uint8_t cmd_set_coefficients   = 0x40; // 
-static constexpr uint8_t cmd_set_output_config  = 0x41; // 
-static constexpr uint8_t cmd_set_output_range   = 0x42; // 
-static constexpr uint8_t cmd_configure          = 0x43; // 
+static constexpr uint8_t cmd_pid_stop_go        = 0x40; // 
+static constexpr uint8_t cmd_set_coefficients   = 0x41; // 
+static constexpr uint8_t cmd_set_output_config  = 0x42; // 
+static constexpr uint8_t cmd_set_output_range   = 0x43; // 
+static constexpr uint8_t cmd_configure          = 0x44; // 
 
     // АЦП - настройки
 static constexpr uint8_t cmd_set_adc_bat        = 0x52;
@@ -32,7 +34,16 @@ static constexpr uint8_t cmd_set_adc_rtu        = 0x54;
 uint8_t res[]  = { 12, 12, 12, 12};
 uint8_t mode[] = { 0, 0, 0, 0 }; // conv to eAnalogReference, 0 = AR_DEFAULT
 
-
+    // ЦАП - настройки
+    // https://stackoverflow.com/questions/53542591/using-external-vref-for-samd21-dac
+enum dac_reference {
+    /** 1V from the internal band-gap reference*/
+    DAC_REFERENCE_INT1V = DAC_CTRLB_REFSEL(0),
+    /** Analog V<SUB>CC</SUB> as reference */
+    DAC_REFERENCE_AVCC  = DAC_CTRLB_REFSEL(1),
+    /** External reference on AREF */
+    DAC_REFERENCE_AREF  = DAC_CTRLB_REFSEL(2),
+};
 
     // Переменные - уточнить типы  
 extern char     rxNbt;          //+ принятое количество байт в пакете
@@ -47,10 +58,13 @@ extern char     txDat[frame];   //+ массив данных для перед�
 uint16_t adcVoltage = 0x0123;  // extern
 uint16_t adcCurrent = 0x8081;  // extern
 
-
+extern bool     _pidStatus;
+extern uint8_t  _pidFunction;
+extern uint16_t setpoint;
 
 uint8_t cmd = cmd_nop;
 
+void doPidStopGo();
 void doSetCoefficients();
 void doSetOutputConfig();
 void doSetOutputRange();
@@ -75,10 +89,13 @@ void doCommand()
 {
 
 //command = cmd_probe;
-//cmd = cmd_probe;           // Test 
+cmd = command;
 
   if( cmd != cmd_nop)
   {
+
+SerialUSB.print(" command -> 0x"); SerialUSB.println(cmd);
+
     switch( cmd )
     {
       
@@ -90,6 +107,14 @@ void doCommand()
       break;
 
       //case cmd_ ...
+
+
+      case cmd_pid_stop_go :
+        doPidStopGo();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("PidStopGo done");
+        #endif
+      break;
 
       case cmd_set_coefficients :
         doSetCoefficients();
@@ -227,6 +252,29 @@ void doProbe()
     Serial.println("измерения");
   #endif
 }
+
+
+void doPidStopGo()
+{
+  if( rxNbt == 8 )
+  {
+     _pidStatus   = rxDat[0];    // false - состояние, при котором DAC выдает заданное напряжение 
+     _pidFunction = rxDat[1];        // 0-1-2 - задать напряжение, ток заряда или ток разряда
+     // проверить на корректность <3
+    setpoint = get16(2);
+    analogWrite( MPins::dac_pin, setpoint << 2 );
+    int16_t min = get16(4);
+    int16_t max = get16(6);
+    bool err = setOutputRange( min, max );  // с учетом PARAM_MULT !!
+    
+  }
+  else
+  {
+    txReplay(1, err_tx);      // Ошибка протокола
+  }      
+}
+
+
 
 void doSetCoefficients()
 {
