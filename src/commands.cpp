@@ -58,7 +58,7 @@ extern char     txDat[frame];   //+ массив данных для перед�
 extern float kp;
 extern float ki;
 extern float kd;
-extern float hz; 
+extern float hz;
 extern int   output_bits; // Set analog out resolution to max
 extern bool  output_signed; 
 
@@ -373,15 +373,25 @@ void doSetOutputRange()
 
 void doConfigure()
 {
-  if( rxNbt == 8 )
+  if( rxNbt == 11 )
   {
-    float kp = (float)get16(0) / 100;
-    float ki = (float)get16(2) / 100;
-    float kd = (float)get16(4) / 100;
-    float hz = (float)get16(6) / 100;
-    int bits = 16;
-    bool sign = false;
-    bool err = configure( kp, ki, kd, hz, bits, sign );
+    float _kp = (float)getF16(0);
+    float _ki = (float)getF16(2);
+    float _kd = (float)getF16(4);
+    float _hz = (float)getF16(6);
+    int16_t _bits = get16(8);
+    bool _sign = rxDat[10];
+    bool err = configure( _kp, _ki, _kd, _hz, _bits, _sign );
+
+    if( err )
+      {
+      kp = _kp;
+      ki = _ki;
+      kd = _kd;
+      hz = _hz;
+      output_bits   = (int)_bits;
+      output_signed = _sign; 
+    }
     txReplay( 1, err );  
   }
   else
