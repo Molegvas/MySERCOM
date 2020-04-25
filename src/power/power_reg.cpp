@@ -10,19 +10,19 @@
 #include <FastPID.h>
 #include "stdint.h"
 
-float Kp =  0.1;
-float Ki =  0.5;
-float Kd =  0.0;
-float Hz = 10.0; 
+float kp =  0.1;
+float ki =  0.5;
+float kd =  0.0;
+float hz = 10.0; 
 int output_bits = 10; // Set analog out resolution to max, 10-bits
 bool output_signed = false; 
 
-uint16_t output       = 0x0000;
-bool     pidStatus   = false;    // false - состояние, при котором DAC выдает заданное напряжение 
-uint8_t  pidFunction = 0;        // 0-1-2 - задать напряжение, ток заряда или ток разряда
+uint16_t output     = 0x0000;
+bool     pidStatus  = false;    // false - PID-регулятор отключен 
+uint8_t  pidMode    = 0;        // 0-1-2 - тестирование: задать напряжение, ток заряда или ток разряда
 // pidReference
 
-FastPID myPID( Kp, Ki, Kd, Hz, output_bits, output_signed );
+FastPID myPID( kp, ki, kd, hz, output_bits, output_signed );
 
 uint16_t setpoint = 512;
 uint16_t feedback = 511;

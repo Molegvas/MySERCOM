@@ -21,11 +21,12 @@ static constexpr uint8_t cmd_power_on = 0x20; //
 static constexpr uint8_t cmd_probe    = 0x30; // 
 
     // ПИД-регулятор
-static constexpr uint8_t cmd_pid_stop_go        = 0x40; // 
-static constexpr uint8_t cmd_set_coefficients   = 0x41; // 
-static constexpr uint8_t cmd_set_output_config  = 0x42; // 
-static constexpr uint8_t cmd_set_output_range   = 0x43; // 
-static constexpr uint8_t cmd_configure          = 0x44; // 
+static constexpr uint8_t cmd_set_stop_go        = 0x40; // стоп-пауза-пуск 
+static constexpr uint8_t cmd_set_coefficients   = 0x41; // kp, ki, kd, hz 
+static constexpr uint8_t cmd_set_output_config  = 0x42; // bits, sign
+static constexpr uint8_t cmd_set_output_range   = 0x43; // min, max
+static constexpr uint8_t cmd_configure          = 0x44; // kp, ki, kd, hz, bits, sign 
+static constexpr uint8_t cmd_pid_test           = 0x45; // mode, setpoint, min, max
 
     // АЦП - настройки
 static constexpr uint8_t cmd_set_adc_bat        = 0x52;
@@ -54,17 +55,24 @@ extern uint8_t  command;        // код команды на выполнени
 extern char     txNbt;          // количество байт данных в пакете
 extern char     txDat[frame];   //+ массив данных для передачи
 
+extern float kp;
+extern float ki;
+extern float kd;
+extern float hz; 
+extern int   output_bits; // Set analog out resolution to max
+extern bool  output_signed; 
+
 
 uint16_t adcVoltage = 0x0123;  // extern
 uint16_t adcCurrent = 0x8081;  // extern
 
 extern bool     pidStatus;
-extern uint8_t  pidFunction;
+extern uint8_t  pidMode;
 extern uint16_t setpoint;
 
 uint8_t cmd = cmd_nop;
 
-void doPidStopGo();
+void doPidTest();
 void doSetCoefficients();
 void doSetOutputConfig();
 void doSetOutputRange();
@@ -85,6 +93,13 @@ uint16_t get16(int i)
   return(  par |= rxDat[i+1]); 
 }
 
+float getF16(int i)
+{
+  uint16_t par  = (rxDat[i] << 8) & 0xff00;
+  par |= rxDat[i+1];
+  return (float)par / 100; 
+}
+
 void doCommand()
 {
   cmd = command;
@@ -92,7 +107,7 @@ void doCommand()
   if( cmd != cmd_nop)
   {
     #ifdef DEBUG_COMMANDS
-      SerialUSB.print(" command -> 0x"); SerialUSB.println(cmd);
+      SerialUSB.print(" command -> 0x"); SerialUSB.println(cmd, HEX);
     #endif
 
     switch( cmd )
@@ -108,8 +123,8 @@ void doCommand()
       //case cmd_ ...
 
 
-      case cmd_pid_stop_go :
-        doPidStopGo();
+      case cmd_pid_test :
+        doPidTest();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("PidStopGo done");
         #endif
@@ -202,24 +217,20 @@ void doInfo()
   for( i = 0; i < frame && ch; i++ )
   {
   ch = txDat[i] = Info[i];
-  //ch = Info[i]; 
 
   #ifdef DEBUG_WAKE
     Serial.print( ch );
   #endif
   }
-  //txReplay( i, Tx_Dat[0] );
+  
   txReplay( i, txDat[0] );
 }
 
 // передать эхо
 void doEcho()
 {
-  //for( i = 0; i < Rx_Nbt && i < MWake::frame; i++ )
   for( int i = 0; i < rxNbt && i < frame; i++ )
-  //Tx_Dat[i] = Rx_Dat[i];
   txDat[i] = rxDat[i];
-  //txReplay( Rx_Nbt, Tx_Dat[0] );
   txReplay( rxNbt, txDat[0] );
   #ifdef DEBUG_WAKE
     Serial.print("команда эхо = "); Serial.print( rxNbt );
@@ -253,24 +264,24 @@ void doProbe()
 }
 
 
-void doPidStopGo()
+void doPidTest()
 {
   if( rxNbt == 8 )
   {
     bool err = false;
 
-    bool    _pidStatus   = rxDat[0];    // false - состояние, при котором DAC выдает заданное напряжение 
-    uint8_t _pidFunction = rxDat[1];    // 0-1-2 - задать напряжение, ток заряда или ток разряда
+    uint8_t _reserve     = rxDat[0];    // зарезервирован
+    uint8_t _pidMode = rxDat[1];    // 0-1-2 - задать напряжение, ток заряда или ток разряда
+    if( _pidMode > 3 ) err = true;  // проверить на корректность <3
 
-    if( _pidFunction > 3 ) err |= true;  // проверить на корректность <3
-    uint16_t _setpoint = get16(2);  
-    int16_t _min = get16(4);
-    int16_t _max = get16(6);
-    err |= setOutputRange( _min, _max ); // с учетом PARAM_MULT !!
+    uint16_t _setpoint  = get16(2);  
+    int16_t _min        = get16(4);
+    int16_t _max        = get16(6);
+    err = err || setOutputRange( _min, _max ); // с учетом PARAM_MULT !!
 
     #ifdef DEBUG_COMMANDS
-      SerialUSB.print("  0: 0x"); SerialUSB.println( _pidStatus, HEX );
-      SerialUSB.print("  1: 0x"); SerialUSB.println( _pidFunction, HEX );
+      SerialUSB.print("  0: 0x"); SerialUSB.println( _reserve, HEX );
+      SerialUSB.print("  1: 0x"); SerialUSB.println( _pidMode, HEX );
       SerialUSB.print("2,3: 0x"); SerialUSB.println( _setpoint, HEX );
       SerialUSB.print("4,5: 0x"); SerialUSB.println( _min, HEX );
       SerialUSB.print("6,7: 0x"); SerialUSB.println( _max, HEX );
@@ -279,9 +290,9 @@ void doPidStopGo()
     
     if(!err)
     {
-      pidStatus   = _pidStatus;
-      pidFunction = _pidFunction;   
-      setpoint    = _setpoint;
+      pidStatus = false;                      // PID-регулятор отключен
+      pidMode   = _pidMode;                   // выбор канала регулирования
+      setpoint  = _setpoint;                  // установка выхода
       analogWrite( MPins::dac_pin, setpoint << 2 );
     }
 
@@ -299,12 +310,27 @@ void doSetCoefficients()
 {
   if( rxNbt == 8 )
   {
-    float kp = (float)get16(0) / 100;
-    float ki = (float)get16(2) / 100;
-    float kd = (float)get16(4) / 100;
-    float hz = (float)get16(6) / 100;
-    //bool err = myPID.setCoefficients( kp, ki, kd, hz);
-    bool err = setCoefficients( kp, ki, kd, hz );
+    float _kp = (float)getF16(0);
+    float _ki = (float)getF16(2);
+    float _kd = (float)getF16(4);
+    float _hz = (float)getF16(6);
+    bool  err = ( setCoefficients( _kp, _ki, _kd, _hz ) );
+    #ifdef DEBUG_COMMANDS
+      SerialUSB.print("  0: "); SerialUSB.println( _kp, 2 );
+      SerialUSB.print("  1: "); SerialUSB.println( _ki, 2 );
+      SerialUSB.print("2,3: "); SerialUSB.println( _kd, 2 );
+      SerialUSB.print("4,5: "); SerialUSB.println( _hz, 2 );
+      if( err ) {               SerialUSB.println( "error" );}
+    #endif
+    
+    if( !err )
+    {
+      kp = _kp;
+      ki = _ki;
+      kd = _kd;
+      hz = _hz; 
+    }
+
     txReplay( 1, err );       // Ошибка параметра
   }
   else
