@@ -21,12 +21,14 @@ static constexpr uint8_t cmd_power_on = 0x20; //
 static constexpr uint8_t cmd_probe    = 0x30; // 
 
     // ПИД-регулятор
-static constexpr uint8_t cmd_set_stop_go        = 0x40; // стоп-пауза-пуск 
-static constexpr uint8_t cmd_set_coefficients   = 0x41; // kp, ki, kd, hz 
-static constexpr uint8_t cmd_set_output_config  = 0x42; // bits, sign
-static constexpr uint8_t cmd_set_output_range   = 0x43; // min, max
-static constexpr uint8_t cmd_configure          = 0x44; // kp, ki, kd, hz, bits, sign 
-static constexpr uint8_t cmd_pid_test           = 0x45; // mode, setpoint, min, max
+static constexpr uint8_t cmd_pid_configure      = 0x40; // kp, ki, kd, hz, bits, sign 
+static constexpr uint8_t cmd_pid_coefficients   = 0x41; // kp, ki, kd, hz 
+static constexpr uint8_t cmd_pid_output_range   = 0x42; // min, max
+static constexpr uint8_t cmd_pid_output_config  = 0x43; // bits, sign
+static constexpr uint8_t cmd_pid_clear          = 0x44; // bits, sign
+
+static constexpr uint8_t cmd_pid_stop_go        = 0x45; // стоп-пауза-пуск 
+static constexpr uint8_t cmd_pid_test           = 0x46; // mode, setpoint, min, max
 
     // АЦП - настройки
 static constexpr uint8_t cmd_set_adc_bat        = 0x52;
@@ -73,10 +75,11 @@ extern uint16_t setpoint;
 uint8_t cmd = cmd_nop;
 
 void doPidTest();
-void doSetCoefficients();
-void doSetOutputConfig();
-void doSetOutputRange();
-void doConfigure();
+void doPidCoefficients();
+void doPidOutputConfig();
+void doPidOutputRange();
+void doPidConfigure();
+void doPidClear();
 
 void doProbe();
 void doInfo();
@@ -126,35 +129,42 @@ void doCommand()
       case cmd_pid_test :
         doPidTest();
         #ifdef DEBUG_COMMANDS
-          SerialUSB.println("PidStopGo done");
+          SerialUSB.println("PidTest done");
         #endif
       break;
 
-      case cmd_set_coefficients :
-        doSetCoefficients();
+      case cmd_pid_coefficients :
+        doPidCoefficients();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Coefficients done");
         #endif
       break;
 
-      case cmd_set_output_config :
-        doSetOutputConfig();
+      case cmd_pid_output_config :
+        doPidOutputConfig();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Output Config done");
         #endif
       break;
 
-      case cmd_set_output_range :
-        doSetOutputRange();
+      case cmd_pid_output_range :
+        doPidOutputRange();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Output Range done");
         #endif
       break;
 
-      case cmd_configure :
-        doConfigure();
+      case cmd_pid_configure :
+        doPidConfigure();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Configure done");
+        #endif
+      break;
+
+      case cmd_pid_clear :
+        doPidClear();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Clear done");
         #endif
       break;
 
@@ -268,16 +278,14 @@ void doPidTest()
 {
   if( rxNbt == 8 )
   {
-    bool err = false;
+    uint8_t err = 0;
 
-    uint8_t _reserve     = rxDat[0];    // зарезервирован
-    uint8_t _pidMode = rxDat[1];    // 0-1-2 - задать напряжение, ток заряда или ток разряда
-    if( _pidMode > 3 ) err = true;  // проверить на корректность <3
-
-    uint16_t _setpoint  = get16(2);  
-    int16_t _min        = get16(4);
-    int16_t _max        = get16(6);
-    err = err || setOutputRange( _min, _max ); // с учетом PARAM_MULT !!
+    uint8_t   _reserve  = rxDat[0];         // зарезервирован
+    uint8_t   _pidMode  = rxDat[1] & 0x03;  // 0-1-2-3 - выкл или задать напряжение, ток заряда или ток разряда
+    uint16_t  _setpoint = get16(2);  
+    int16_t   _min      = get16(4);
+    int16_t   _max      = get16(6);
+    if( !setOutputRange( _min, _max ) ) err = 0x40; // с учетом PARAM_MULT !!
 
     #ifdef DEBUG_COMMANDS
       SerialUSB.print("  0: 0x"); SerialUSB.println( _reserve, HEX );
@@ -285,18 +293,29 @@ void doPidTest()
       SerialUSB.print("2,3: 0x"); SerialUSB.println( _setpoint, HEX );
       SerialUSB.print("4,5: 0x"); SerialUSB.println( _min, HEX );
       SerialUSB.print("6,7: 0x"); SerialUSB.println( _max, HEX );
-      if( err )                   SerialUSB.println( "error" );
+      if( err )                   SerialUSB.println( "error" );  
+      
+      //long mmm = PARAM_MULT;
+      //SerialUSB.println( mmm, HEX );
+
     #endif
     
-    if(!err)
+    if( err )
     {
-      pidStatus = false;                      // PID-регулятор отключен
-      pidMode   = _pidMode;                   // выбор канала регулирования
-      setpoint  = _setpoint;                  // установка выхода
-      analogWrite( MPins::dac_pin, setpoint << 2 );
+      pidStatus = false;            // отключен
+      pidMode   = 0;                // не выбран
+      setpoint  = 0x00;             // не задано
+    }
+    else
+    {
+      pidStatus = false;            // PID-регулятор отключен
+      pidMode   = _pidMode;         // выбор канала регулирования
+      setpoint  = _setpoint;        // установка выхода
     }
 
-    txReplay( 1, err );       // true - ошибка любого параметра
+    analogWrite( MPins::dac_pin, setpoint << 2 );
+
+    txReplay( 1, err );       // 0x40 - ошибка любого параметра myPID.setOutputRange()
   }
   else
   {
@@ -306,7 +325,7 @@ void doPidTest()
 
 
 
-void doSetCoefficients()
+void doPidCoefficients()
 {
   if( rxNbt == 8 )
   {
@@ -339,7 +358,7 @@ void doSetCoefficients()
   }
 }
 
-void doSetOutputConfig()
+void doPidOutputConfig()
 {
   if( rxNbt == 3 )
   {
@@ -355,7 +374,7 @@ void doSetOutputConfig()
 
 }
 
-void doSetOutputRange()
+void doPidOutputRange()
 {
   if( rxNbt == 4 )
   {
@@ -371,8 +390,10 @@ void doSetOutputRange()
 
 }
 
-void doConfigure()
+void doPidConfigure()
 {
+  uint8_t err = 0x00;
+
   if( rxNbt == 11 )
   {
     float _kp = (float)getF16(0);
@@ -381,17 +402,27 @@ void doConfigure()
     float _hz = (float)getF16(6);
     int16_t _bits = get16(8);
     bool _sign = rxDat[10];
-    bool err = configure( _kp, _ki, _kd, _hz, _bits, _sign );
+    if( !configure( _kp, _ki, _kd, _hz, _bits, _sign ) ) err = 0x40;
+    //if( !configure( 0.1, 0.5, 0.0, 10.0, 10, false ) ) err = 0x40;
 
-    if( err )
-      {
-      kp = _kp;
-      ki = _ki;
-      kd = _kd;
-      hz = _hz;
-      output_bits   = (int)_bits;
-      output_signed = _sign; 
-    }
+    #ifdef DEBUG_COMMANDS
+      SerialUSB.print("0,1: "); SerialUSB.println( _kp, 2 );
+      SerialUSB.print("2,3: "); SerialUSB.println( _ki, 2 );
+      SerialUSB.print("4,5: "); SerialUSB.println( _kd, 2 );
+      SerialUSB.print("6,7: "); SerialUSB.println( _hz, 2 );
+      SerialUSB.print("8,9: 0x"); SerialUSB.println( _bits, HEX );
+      SerialUSB.print(" 10: 0x"); SerialUSB.println( _sign, HEX );
+      if( err ) {               SerialUSB.println( "error" );}
+    #endif
+    // if( err )
+    // {
+    //   kp = _kp;
+    //   ki = _ki;
+    //   kd = _kd;
+    //   hz = _hz;
+    //   output_bits   = (int)_bits;
+    //   output_signed = _sign; 
+    // }
     txReplay( 1, err );  
   }
   else
@@ -399,6 +430,25 @@ void doConfigure()
     txReplay(1, err_tx);
   }
 }
+
+
+void doPidClear()
+{
+  if( rxNbt == 0 )
+  {
+    clear();
+    txReplay(1, 0);
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
+}
+
+
+
+
+
 
 // Команды настроек АЦП
 void doAdcBat()

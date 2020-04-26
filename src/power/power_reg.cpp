@@ -93,3 +93,8 @@ bool configure( float kp, float ki, float kd, float hz, int bits, bool sign )
 {
   return myPID.configure( kp, ki, kd, hz, bits, sign );
 }
+
+void clear()
+{
+  return myPID.clear();
+}
