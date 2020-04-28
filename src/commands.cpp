@@ -25,7 +25,7 @@ static constexpr uint8_t cmd_pid_configure      = 0x40; // kp, ki, kd, hz, bits,
 static constexpr uint8_t cmd_pid_coefficients   = 0x41; // kp, ki, kd, hz 
 static constexpr uint8_t cmd_pid_output_range   = 0x42; // min, max
 static constexpr uint8_t cmd_pid_output_config  = 0x43; // bits, sign
-static constexpr uint8_t cmd_pid_clear          = 0x44; // bits, sign
+static constexpr uint8_t cmd_pid_clear          = 0x44; 
 
 static constexpr uint8_t cmd_pid_stop_go        = 0x45; // стоп-пауза-пуск 
 static constexpr uint8_t cmd_pid_test           = 0x46; // mode, setpoint, min, max
