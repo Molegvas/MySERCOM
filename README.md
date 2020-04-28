@@ -219,15 +219,15 @@ void loop()
 
 #### Команды ПИД-регулятора
 
-|  код  |        имя              |        параметры           |    примечание       |
-|-------|-------------------------|----------------------------|---------------------|
-| 0x40	| cmd_pid_configure       | kp, ki, kd, hz, bits, sign |                     |
-| 0x41	| cmd_pid_coefficients    | kp, ki, kd, hz             |                     |
-| 0x42	| cmd_pid_output_range    | min, max                   |                     |
-| 0x43	| cmd_pid_output_config   | bits, sign                 |                     |
-| 0x44	| cmd_pid_clear           |                            |                     |
-| 0x45	| cmd_pid_stop_go         | (стоп-пауза-пуск)          |                     |
-| 0x46	| cmd_pid_test            | mode, setpoint, min, max   |                     |
-| 0x47	|                         |                            |                     |
-|-------|-------------------------|----------------------------|---------------------| 
+|  код  |        имя              |        параметры           |          пример             |
+|-------|-------------------------|----------------------------|-----------------------------|
+| 0x40	| cmd_pid_configure       | kp, ki, kd, hz, bits, sign |                             |
+| 0x41	| cmd_pid_coefficients    | kp, ki, kd, hz             |                             |
+| 0x42	| cmd_pid_output_range    | min, max                   |                             |
+| 0x43	| cmd_pid_output_config   | bits, sign                 |                             |
+| 0x44	| cmd_pid_clear           |                            |                             |
+| 0x45	| cmd_pid_stop_go         | (стоп-пауза-пуск)          |                             |
+| 0x46	| cmd_pid_test            | mode, setpoint, min, max   |                             |
+| 0x47	|                         |                            |                             |
+|-------|-------------------------|----------------------------|-----------------------------| 
 * kp, ki, kd - целочисленное, полученные умножением на множитель 100
