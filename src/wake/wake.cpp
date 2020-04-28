@@ -241,7 +241,11 @@ void wakeWrite()
     case send_data:                       // -----> передача данных
     {
       if(txPtr < txNbt)
-        dataByte = txDat[ txPtr++ ];  
+      {
+        dataByte = txDat[ txPtr++ ]; 
+
+//SerialUSB.print(" ->0x");   SerialUSB.print( dataByte, HEX );           // dataByte -> USB
+      }
       else
       {
         dataByte = txCrc;                 // передача CRC

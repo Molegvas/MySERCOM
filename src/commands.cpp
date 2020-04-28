@@ -83,7 +83,7 @@ void doPidOutputRange();
 void doPidConfigure();
 void doPidClear();
 
-void doProbe();
+void doReadProbes();
 void doInfo();
 void doEcho();
 void doErr();
@@ -119,9 +119,9 @@ void doCommand()
     {
       
       case cmd_adc_read_probes :
-        doProbe();
+        doReadProbes();
         #ifdef DEBUG_COMMANDS
-          SerialUSB.println("Probe done");
+          SerialUSB.println("Read Probes done");
         #endif
       break;
 
@@ -259,7 +259,7 @@ void doErr()
 }
 
 // отправить данные измерений
-void doProbe()
+void doReadProbes()
 {
   if( rxNbt == 0 )
   {
@@ -272,7 +272,7 @@ void doProbe()
 
     txNbt = 6;
     txReplay( txNbt, txDat[0] );
-    #ifdef DEBUG_WAKE
+    #ifdef DEBUG_COMMANDS
       Serial.println("измерения");
     #endif
   }
