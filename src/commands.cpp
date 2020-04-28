@@ -17,8 +17,7 @@ static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 //bool _powerStatus = false;
 
     // Коды целевых команд:
-static constexpr uint8_t cmd_power_on = 0x20; // 
-static constexpr uint8_t cmd_probe    = 0x30; // 
+static constexpr uint8_t cmd_power_on           = 0x31; // 
 
     // ПИД-регулятор
 static constexpr uint8_t cmd_pid_configure      = 0x40; // kp, ki, kd, hz, bits, sign 
@@ -31,6 +30,9 @@ static constexpr uint8_t cmd_pid_stop_go        = 0x45; // стоп-пауза-�
 static constexpr uint8_t cmd_pid_test           = 0x46; // mode, setpoint, min, max
 
     // АЦП - настройки
+static constexpr uint8_t cmd_adc_read_probes              = 0x50; // 
+//static constexpr uint8_t cmd_              = 0x51; // 
+
 static constexpr uint8_t cmd_set_adc_bat        = 0x52;
 static constexpr uint8_t cmd_set_adc_shunt      = 0x53;
 static constexpr uint8_t cmd_set_adc_rtu        = 0x54;
@@ -100,7 +102,7 @@ float getF16(int i)
 {
   uint16_t par  = (rxDat[i] << 8) & 0xff00;
   par |= rxDat[i+1];
-  return (float)par / 100; 
+  return (float)(par / 256); 
 }
 
 void doCommand()
@@ -116,7 +118,7 @@ void doCommand()
     switch( cmd )
     {
       
-      case cmd_probe :
+      case cmd_adc_read_probes :
         doProbe();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Probe done");
@@ -259,18 +261,25 @@ void doErr()
 // отправить данные измерений
 void doProbe()
 {
-  txDat[0] = ( adcVoltage >> 8) & 0xFF; // Hi
-  txDat[1] =   adcVoltage & 0xFF;       // Lo
-  txDat[2] = ( adcCurrent >> 8) & 0xFF; // Hi
-  txDat[3] =   adcCurrent & 0xFF;       // Lo
-  txDat[4] =   0x77;      // mcr1
-  txDat[5] =   0x88;      // mcr2
+  if( rxNbt == 0 )
+  {
+    txDat[0] = ( adcVoltage >> 8) & 0xFF; // Hi
+    txDat[1] =   adcVoltage & 0xFF;       // Lo
+    txDat[2] = ( adcCurrent >> 8) & 0xFF; // Hi
+    txDat[3] =   adcCurrent & 0xFF;       // Lo
+    txDat[4] =   0x77;      // mcr1
+    txDat[5] =   0x88;      // mcr2
 
-  txNbt = 6;
-  txReplay( txNbt, txDat[0] );
-  #ifdef DEBUG_WAKE
-    Serial.println("измерения");
-  #endif
+    txNbt = 6;
+    txReplay( txNbt, txDat[0] );
+    #ifdef DEBUG_WAKE
+      Serial.println("измерения");
+    #endif
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
 }
 
 
