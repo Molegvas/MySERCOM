@@ -35,4 +35,8 @@ void wakeInit( uint8_t addr, long time );
 void wakeRead();
 void txReplay(char n, char err);          // передача ответа на команду
 
+uint16_t get16(int i);
+float getF16(int i);
+void testReply( int n );                  // тест отправить n байт из буфера приемника
+
 #endif //!_WAKE_H_

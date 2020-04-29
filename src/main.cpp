@@ -9,7 +9,7 @@
 
 #include "board/mpins.h"
 #include "wake/wake.h"
-#include "commands.h"
+#include "commands/commands.h"
 #include "power/power_reg.h"
 #include "adc/adc.h"
 
@@ -37,9 +37,9 @@ void loop()
 {
   if( 1)      // пока так
   {   // Измерение готово
-    //doMeasure();   // считать, преобразовать, задать следующее и запустить
-    //delay(500);
-    //doPid();      // исполнять, если задано
+    doMeasure();   // считать, преобразовать, задать следующее и запустить
+    delay(10);
+    doPid();      // исполнять, если задано
   }
   
   if( Serial1.available() )     // В буфере приема есть принятые байты, не факт, что пакет полный

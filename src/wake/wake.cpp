@@ -308,3 +308,23 @@ void txReplay(char n, char err)
   wakeStartWrite();               // инициализация передачи
   command = cmd_nop;              // команда обработана
 }
+
+uint16_t get16(int i)
+{
+  uint16_t par  = rxDat[i] << 8;
+  return(  par |= rxDat[i+1]); 
+}
+
+float getF16(int i)
+{
+  uint16_t par  = (rxDat[i] << 8) & 0xff00;
+  par |= rxDat[i+1];
+  return (float)(par / 256); 
+}
+
+void testReply( int rxNbt )
+{
+  for( int i = 0; i < rxNbt ; i++ )
+  txDat[i] = rxDat[i];
+  txReplay( rxNbt, txDat[0] );
+}
