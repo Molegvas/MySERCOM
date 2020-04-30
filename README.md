@@ -53,6 +53,24 @@
 ```
 Если предложенных комбинаций окажется недостаточно - корректируем wiring_analog.c
 * 1/2x to 16x gain
+```c++
+#define   ADC_INPUTCTRL_GAIN_1X_Val       0x0ul  /**< \brief (ADC_INPUTCTRL) 1x */
+#define   ADC_INPUTCTRL_GAIN_2X_Val       0x1ul  /**< \brief (ADC_INPUTCTRL) 2x */
+#define   ADC_INPUTCTRL_GAIN_4X_Val       0x2ul  /**< \brief (ADC_INPUTCTRL) 4x */
+#define   ADC_INPUTCTRL_GAIN_8X_Val       0x3ul  /**< \brief (ADC_INPUTCTRL) 8x */
+#define   ADC_INPUTCTRL_GAIN_16X_Val      0x4ul  /**< \brief (ADC_INPUTCTRL) 16x */
+#define   ADC_INPUTCTRL_GAIN_DIV2_Val     0xFul  /**< \brief (ADC_INPUTCTRL) 1/2x */
+```
+*Vref [1v to VDDANA - 0.6V]
+```c++
+#define   ADC_REFCTRL_REFSEL_INTREF_Val   _U(0x0)   /**< \brief (ADC_REFCTRL) Internal Bandgap Reference */
+#define   ADC_REFCTRL_REFSEL_INTVCC0_Val  _U(0x1)   /**< \brief (ADC_REFCTRL) 1/1.6 VDDANA */
+#define   ADC_REFCTRL_REFSEL_INTVCC1_Val  _U(0x2)   /**< \brief (ADC_REFCTRL) 1/2 VDDANA */
+#define   ADC_REFCTRL_REFSEL_AREFA_Val    _U(0x3)   /**< \brief (ADC_REFCTRL) External Reference */
+#define   ADC_REFCTRL_REFSEL_AREFB_Val    _U(0x4)   /**< \brief (ADC_REFCTRL) External Reference */
+#define   ADC_REFCTRL_REFSEL_INTVCC2_Val  _U(0x5)   /**< \brief (ADC_REFCTRL) VCCANA */
+```
+ Conversion range:
 * Vref [1v to VDDANA - 0.6V]
 * ADCx * GAIN [0V to -Vref]
 
