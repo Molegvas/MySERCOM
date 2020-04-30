@@ -32,11 +32,12 @@ static constexpr uint8_t cmd_pid_test           = 0x46; // mode, setpoint, min, 
 
     // АЦП - настройки
 static constexpr uint8_t cmd_adc_read_probes    = 0x50; // 
-static constexpr uint8_t cmd_adc_config         = 0x51; // probe, resolution, reference
+static constexpr uint8_t cmd_adc_config         = 0x51; // probe, resolution, mode
+static constexpr uint8_t cmd_adc_config52       = 0x52; // probe, resolution, gain, reference
 
-static constexpr uint8_t cmd_set_adc_bat        = 0x52;
-static constexpr uint8_t cmd_set_adc_shunt      = 0x53;
-static constexpr uint8_t cmd_set_adc_rtu        = 0x54;
+static constexpr uint8_t cmd_set_adc_bat        = 0x55;
+static constexpr uint8_t cmd_set_adc_shunt      = 0x56;
+static constexpr uint8_t cmd_set_adc_rtu        = 0x57;
 uint8_t res[]  = { 12, 12, 12, 12};
 uint8_t mode[] = { 0, 0, 0, 0 }; // conv to eAnalogReference, 0 = AR_DEFAULT
 
@@ -114,11 +115,19 @@ void doCommand()
         #endif
         break;
 
-        // probe: resolution, reference
+        // probe: resolution, mode
       case cmd_adc_config :
         doAdcConfig();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Probe Config done");
+        #endif
+        break;
+
+        // probe: resolution, gain, reference
+      case cmd_adc_config52 :
+        doAdcConfig52();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Probe Config52 done");
         #endif
         break;
 

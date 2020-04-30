@@ -10,6 +10,7 @@
 
 void doReadProbes();
 void doAdcConfig();
+void doAdcConfig52();
 
 
 #endif  //!_ADC_COMMANDS_H_ 

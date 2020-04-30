@@ -25,8 +25,12 @@ extern uint16_t adcReserve;  //
 extern uint16_t adcCelsius;  //
 
 extern uint16_t         probeResolution[];
-extern eAnalogReference probeReference[];
-
+extern eAnalogReference probeMode[];
+extern uint16_t probeReference[];
+// comm 52
+extern uint8_t prbResolution[];
+extern uint8_t prbGain[];
+extern uint8_t prbReference[];
 
 // отправить данные измерений
 void doReadProbes()
@@ -64,7 +68,7 @@ void doAdcConfig()
   {
     uint8_t  _probe         = rxDat[0] & 0x03;              // 0-1-2-3 - U, I, D, C
     probeResolution[_probe] = get16(1);
-    probeReference [_probe] = (eAnalogReference)get16(3);   // mode
+    probeMode [_probe] = (eAnalogReference)get16(3);   // mode
 
 //    testReply( 5 );
     txReplay( 1, 0 );                   // Об ошибках не сообщается - исправляются автоматически
@@ -72,5 +76,23 @@ void doAdcConfig()
   else
   {
     txReplay(1, err_tx);                // ошибка протокола
+  }   
+}
+
+void doAdcConfig52()
+{
+  if( rxNbt == 4 )
+  {
+    uint8_t  _probe       = rxDat[0] & 0x03;      // 0-1-2-3 - U, I, D, C
+    prbResolution[_probe] = rxDat[1];
+    prbGain      [_probe] = rxDat[2];
+    prbReference [_probe] = rxDat[3];
+
+    //testReply( 4 );
+    txReplay( 1, 0 );         // Об ошибках не сообщается - исправляются автоматически при конфигурировании
+  }
+  else
+  {
+    txReplay(1, err_tx);      // ошибка протокола
   }   
 }
