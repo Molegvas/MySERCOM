@@ -19,7 +19,50 @@
 
    ###          Особенности реализации управления измерениями.
 
+
+Особенности в выборе параметров АЦП - кроме разрешения - с ним все ясно. Поддержка выбора усиления и опоры в Arduino своеобразна и сведена к выбору режима (mode):
+```c++
+  switch (mode)
+  {
+    case AR_INTERNAL:
+    case AR_INTERNAL2V23:
+      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
+      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC0_Val; // 1/1.48 VDDANA = 1/1.48* 3V3 = 2.2297
+      break;
+
+    case AR_EXTERNAL:
+      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
+      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_AREFA_Val;
+      break;
+
+    case AR_INTERNAL1V0:
+      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
+      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INT1V_Val;   // 1.0V voltage reference
+      break;
+
+    case AR_INTERNAL1V65:
+      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
+      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC1_Val; // 1/2 VDDANA = 0.5* 3V3 = 1.65V
+      break;
+
+    case AR_DEFAULT:
+    default:
+      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_DIV2_Val;
+      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC1_Val; // 1/2 VDDANA = 0.5* 3V3 = 1.65V
+      break;
+```
+Если предложенных комбинаций окажется недостаточно - корректируем wiring_analog.c
+* 1/2x to 16x gain
+* Vref [1v to VDDANA - 0.6V]
+* ADCx * GAIN [0V to -Vref]
+
 ... в разработке
+ #### Измерение напряжения
+*
+ #### Измерения тока
+*
+ #### Измерение температуры
+*
 
    ###          Особенности реализации PID-регулирования.
 
