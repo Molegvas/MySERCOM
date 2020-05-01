@@ -7,7 +7,9 @@
 #define _ADC_H_
 
 
-void initAdc();
+//void initAdc();
+void initAdc52(uint8_t n);
+
 void doMeasure(); 
 
 

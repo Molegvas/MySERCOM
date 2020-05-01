@@ -31,9 +31,10 @@ static constexpr uint8_t cmd_pid_stop_go        = 0x45; // стоп-пауза-�
 static constexpr uint8_t cmd_pid_test           = 0x46; // mode, setpoint, min, max
 
     // АЦП - настройки
-static constexpr uint8_t cmd_adc_read_probes    = 0x50; // 
+static constexpr uint8_t cmd_adc_read_probes    = 0x50; // Read all probes
 static constexpr uint8_t cmd_adc_config         = 0x51; // probe, resolution, mode
 static constexpr uint8_t cmd_adc_config52       = 0x52; // probe, resolution, gain, reference
+static constexpr uint8_t cmd_adc_read_mv        = 0x53; // Read probes, mV
 
 static constexpr uint8_t cmd_set_adc_bat        = 0x55;
 static constexpr uint8_t cmd_set_adc_shunt      = 0x56;
@@ -130,6 +131,14 @@ void doCommand()
           SerialUSB.println("Probe Config52 done");
         #endif
         break;
+
+      case cmd_adc_read_mv :
+        doReadValues();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Read mV done");
+        #endif
+        break;
+
 
         //case cmd_ ...
 

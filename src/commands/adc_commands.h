@@ -11,6 +11,7 @@
 void doReadProbes();
 void doAdcConfig();
 void doAdcConfig52();
+void doReadValues();    // Чтение данных в физических величинах ( милливольты, миллиамперы, миллиградусы )
 
 
 #endif  //!_ADC_COMMANDS_H_ 

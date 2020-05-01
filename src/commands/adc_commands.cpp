@@ -24,6 +24,14 @@ extern uint16_t adcCurrent;  //
 extern uint16_t adcReserve;  //
 extern uint16_t adcCelsius;  //
 
+// Пересчитанные в физические величины - mV, mA, mC
+
+extern int16_t voltage;
+extern int16_t current;
+extern int16_t reserve;
+extern int16_t celsius;
+
+
 extern uint16_t         probeResolution[];
 extern eAnalogReference probeMode[];
 extern uint16_t probeReference[];
@@ -96,3 +104,33 @@ void doAdcConfig52()
     txReplay(1, err_tx);      // ошибка протокола
   }   
 }
+
+// Чтение данных в физических величинах ( милливольты, миллиамперы, миллиградусы )
+void doReadValues()
+{
+  if( rxNbt == 0 )
+  {
+    txDat[0] = ( voltage >> 8) & 0xFF; // Hi
+    txDat[1] =   voltage & 0xFF;       // Lo
+    txDat[2] = ( current >> 8) & 0xFF; // Hi
+    txDat[3] =   current & 0xFF;       // Lo
+    txDat[4] = ( reserve >> 8) & 0xFF; // Hi
+    txDat[5] =   reserve & 0xFF;       // Lo
+    txDat[6] = ( celsius >> 8) & 0xFF; // Hi
+    txDat[7] =   celsius & 0xFF;       // Lo
+    txDat[8] =   0x77;      // mcr1
+    txDat[9] =   0x88;      // mcr2
+
+    txNbt = 10;
+    txReplay( txNbt, txDat[0] );
+    #ifdef DEBUG_COMMANDS
+      Serial.println("измерения");
+    #endif
+  }
+  else
+  {
+    txReplay(1, err_tx);
+  }
+
+}
+

@@ -28,7 +28,8 @@ void setup()
   Serial1.begin(115200);
 
   wakeInit( 0x00, 500 );           // Без адреса, время ожидания, ms
-  initAdc();
+  //initAdc();
+  initAdc52(0);
 
 
 }
