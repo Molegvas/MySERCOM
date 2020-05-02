@@ -39,6 +39,7 @@ extern uint16_t probeReference[];
 extern uint8_t prbResolution[];
 extern uint8_t prbGain[];
 extern uint8_t prbReference[];
+extern uint8_t prbReserve[];
 
 // отправить данные измерений
 void doReadProbes()
@@ -89,14 +90,15 @@ void doAdcConfig()
 
 void doAdcConfig52()
 {
-  if( rxNbt == 4 )
+  if( rxNbt == 5 )
   {
     uint8_t  _probe       = rxDat[0] & 0x03;      // 0-1-2-3 - U, I, D, C
     prbResolution[_probe] = rxDat[1];
     prbGain      [_probe] = rxDat[2];
     prbReference [_probe] = rxDat[3];
+    prbReserve   [_probe] = rxDat[4];
 
-    //testReply( 4 );
+    //testReply( 5 );
     txReplay( 1, 0 );         // Об ошибках не сообщается - исправляются автоматически при конфигурировании
   }
   else
@@ -131,6 +133,5 @@ void doReadValues()
   {
     txReplay(1, err_tx);
   }
-
 }
 

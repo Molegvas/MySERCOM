@@ -15,74 +15,65 @@
   Протокол WAKE является логическим уровнем интерфейса управления оборудованием с помощью асинхронного последовательного канала. Физический уровень интерфейса протоколом не определяется, может использоваться, например, RS-232, RS-485 или USB. Протокол позволяет производить обмен пакетами данных (data frames) длиной до 255 байт с адресуемыми устройствами, которых может быть до 127. Формат данных может быть любым. Могут передаваться байтовые поля, многобайтовые слова или строки символов. Для контроля правильности передачи данных используется контрольная сумма (CRC-8).
  Подробная информация о WAKE: http://leoniv.diod.club/articles/wake/wake.html
 Выбор этого протокола объясняется тем, что хорошо известен автору и многолетней работой доказал свою надежность в устройстве ротации кондиционеров.
- Первоначальные планы использовать в качестве физического носителя SPI разбились об прозу жизни - в наличии не оказалось соответствующего адаптера USB-3SPI. Для целей прототипирования используется USB-UART терминал WakeUp! от Ридико Леонида Ивановича. Найдете в "resources". 
+ Первоначальные планы использовать в качестве физического носителя SPI разбились о прозу жизни - в наличии не оказалось соответствующего адаптера USB-3SPI. Для целей прототипирования используется USB-UART терминал WakeUp! от Ридико Леонида Ивановича. Найдете в "resources". 
 
    ###          Особенности реализации управления измерениями.
 
+Особенности в выборе параметров АЦП - кроме разрешения - с ним все ясно. Поддержка выбора усиления и опоры в Arduino своеобразна и сведена к выбору режима (mode), ограничивая выбор - произведена замена на раздельное задание всех трех параметров.
+```c++ 
+// wiring_analog.h, wiring_analog.c
 
-Особенности в выборе параметров АЦП - кроме разрешения - с ним все ясно. Поддержка выбора усиления и опоры в Arduino своеобразна и сведена к выбору режима (mode):
-```c++
-  switch (mode)
-  {
-    case AR_INTERNAL:
-    case AR_INTERNAL2V23:
-      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
-      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC0_Val; // 1/1.48 VDDANA = 1/1.48* 3V3 = 2.2297
-      break;
+// Arduino (было)
+typedef enum _eAnalogReference
+{
+  AR_DEFAULT,
+  AR_INTERNAL,
+  AR_EXTERNAL,
+  AR_INTERNAL1V0,
+  AR_INTERNAL1V65,
+  AR_INTERNAL2V23
+} eAnalogReference ;
 
-    case AR_EXTERNAL:
-      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
-      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_AREFA_Val;
-      break;
+// Замена (стало)
+typedef enum _mGain
+{
+  MG_GAIN_1X,
+  MG_GAIN_2X,
+  MG_GAIN_4X,
+  MG_GAIN_8X,
+  MG_GAIN_16X,
+  MG_GAIN_DIV2
+} mGain;
 
-    case AR_INTERNAL1V0:
-      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
-      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INT1V_Val;   // 1.0V voltage reference
-      break;
+typedef enum _mRef
+{
+  MR_INTREF,          // Internal Bandgap Reference
+  MR_INTVCC0,         // 1/1.48 VDDANA
+  MR_INTVCC1,         // 1/2 VDDANA
+  MR_AREFA,           // External Reference
+  MR_AREFB,           // External Reference nu
+} mRef;
 
-    case AR_INTERNAL1V65:
-      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;      // Gain Factor Selection
-      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC1_Val; // 1/2 VDDANA = 0.5* 3V3 = 1.65V
-      break;
+   //Добавлены также два варианта дифференциальных измерений.
+extern int32_t analogReadDiff( uint8_t pin_pos, uint8_t pin_neg ); 
+extern int32_t analogReadDiffRaw( uint8_t mux_pos, uint8_t mux_neg );
 
-    case AR_DEFAULT:
-    default:
-      ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_DIV2_Val;
-      ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC1_Val; // 1/2 VDDANA = 0.5* 3V3 = 1.65V
-      break;
-```
-Если предложенных комбинаций окажется недостаточно - корректируем wiring_analog.c
-* 1/2x to 16x gain
-```c++
-#define   ADC_INPUTCTRL_GAIN_1X_Val       0x0ul  /**< \brief (ADC_INPUTCTRL) 1x */
-#define   ADC_INPUTCTRL_GAIN_2X_Val       0x1ul  /**< \brief (ADC_INPUTCTRL) 2x */
-#define   ADC_INPUTCTRL_GAIN_4X_Val       0x2ul  /**< \brief (ADC_INPUTCTRL) 4x */
-#define   ADC_INPUTCTRL_GAIN_8X_Val       0x3ul  /**< \brief (ADC_INPUTCTRL) 8x */
-#define   ADC_INPUTCTRL_GAIN_16X_Val      0x4ul  /**< \brief (ADC_INPUTCTRL) 16x */
-#define   ADC_INPUTCTRL_GAIN_DIV2_Val     0xFul  /**< \brief (ADC_INPUTCTRL) 1/2x */
-```
-*Vref [1v to VDDANA - 0.6V]
-```c++
-#define   ADC_REFCTRL_REFSEL_INTREF_Val   _U(0x0)   /**< \brief (ADC_REFCTRL) Internal Bandgap Reference */
-#define   ADC_REFCTRL_REFSEL_INTVCC0_Val  _U(0x1)   /**< \brief (ADC_REFCTRL) 1/1.6 VDDANA */
-#define   ADC_REFCTRL_REFSEL_INTVCC1_Val  _U(0x2)   /**< \brief (ADC_REFCTRL) 1/2 VDDANA */
-#define   ADC_REFCTRL_REFSEL_AREFA_Val    _U(0x3)   /**< \brief (ADC_REFCTRL) External Reference */
-#define   ADC_REFCTRL_REFSEL_AREFB_Val    _U(0x4)   /**< \brief (ADC_REFCTRL) External Reference */
-#define   ADC_REFCTRL_REFSEL_INTVCC2_Val  _U(0x5)   /**< \brief (ADC_REFCTRL) VCCANA */
 ```
  Conversion range:
+Что такое -Vref - не понятно. Будем руководствоваться здравым смыслом. За рамки - ни-ни.
 * Vref [1v to VDDANA - 0.6V]
 * ADCx * GAIN [0V to -Vref]
 
-... в разработке
  #### Измерение напряжения
-*
- #### Измерения тока
-*
- #### Измерение температуры
-*
+   Измерение напряжения предполагается в диапазоне от -0,2В до +20,0В. Режим АЦП - дифференциальный. Опорное напряжение и усиление - подбор не должен вызвать затруднение, всё достаточно прозрачно. Если получится реализовать вариант со сдвигом по напряжению на 200мВ минусовой клеммы, то обработка неправильной полярности подключения не потребует аппаратной поддержки. 
 
-   ###          Особенности реализации PID-регулирования.
+ #### Измерения тока
+   Измерение тока в диапазоне от -16 до +16 ампер на токоизмерительном шунте укладывается в диапазон входного напряжения от -160 до +160мВ. Режим АЦП - дифференциальный. Опорное напряжение 1В, усилитель x4. Подтверждено экспериментом. Начальное смещение составило около 5 мВ, что вполне ожидаемо. Калибровка и компенсация смещения не производились на первом этапе. Пороги аварийного отключения не выставлялись.
+  
+ #### Измерение температуры
+    Пока не актуально.
+
+        ### Особенности реализации PID-регулирования.
 
   Для прототипирования выбран быстрый 32-битный пид-регулятор с фиксированной точкой для Arduino:
 FastPID v1.3.1 by Mike Matera 
@@ -282,10 +273,12 @@ void loop()
 |  код  |          имя            |            параметры            |           пример (данные, hex)            |
 |-------|-------------------------|---------------------------------|-------------------------------------------|
 | 0x50	| cmd_adc_read_probes     |                                 |                                           |
-| ответ	| 			  | adcU_h, adcU_l, adcI_h, adcI_l, | 1F 00 1F 00                               |
-|    	| 			  | adcD_h, adcD_l, adcC_h, adcC_l, | 1F 00 1F 00                               |
+| ответ	| 			  | adcU_h,l, adcI_h,l, 	    | 1F 00 1F 00                               |
+|    	| 			  | adcD_h,l, adcC_h,l,             | 1F 00 1F 00                               |
 |       |                         | mcr1, mcr2                      | 00 FF                                     |
-| 0x51	| cmd_adc_config          | nProbe, resolution, mode        | 03 00 A0 00 00                            |
+| 0x51	| cmd_adc_config          | nPrb_h,l, resolution_h,l, mode  | 03 00 A0 00 00                            |
+| ответ	| 			  |                                 | 00                                        |
+| 0x52	| cmd_adc_config52        | nPrb, res, gain, ref, n         | 01 0C 02 00 04                            |
 | ответ	| 			  |                                 | 00                                        |
 |       |                         |                                 |                                           | 
 

@@ -49,6 +49,9 @@ eAnalogReference  probeMode[]  = { AR_DEFAULT, AR_DEFAULT, AR_DEFAULT, AR_INTERN
 uint8_t prbResolution[] = {   12,   12,   10,   10 };
 uint8_t prbGain[]       = { 0x05, 0x05, 0x00, 0x00 }; // 05 - DIV2  00 - X1 
 uint8_t prbReference[]  = { 0x02, 0x02, 0x01, 0x01 }; // 02 - VCC1  01 - VCC0
+uint8_t prbReserve[]    = { 0x04, 0x04, 0x04, 0x04 }; // Зарезервировано для усреднений
+
+
 void analogGain52( uint8_t prb );
 void analogRef52( uint8_t prb );
 
