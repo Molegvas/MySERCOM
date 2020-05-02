@@ -87,6 +87,7 @@
                 "USB_PRODUCT=\"Arduino Zero\"",
                 "USB_MANUFACTURER=\"Arduino\"",
                 "WEMOS",
+                "MSAMP",
                 "COMM52",
                 ""
             ],
