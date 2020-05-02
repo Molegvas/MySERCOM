@@ -53,8 +53,8 @@ typedef enum _mRef
   MR_AREFA,           // External Reference
   MR_AREFB,           // External Reference nu
 } mRef;
-
-Расширен функционал analogRead(bits): позволяет АЦП считывать 8, 10 или 12 бит в обычном режиме или 13-16 бит с использованием передискретизации и децимации. Это работает со всеми аналоговыми функциями чтения, включая analogRead(uint8_t pin), заданными в Arduino IDE(https://www.arduino.cc/en/Reference/analogRead см. страницы 853 и 862 таблицы данных. Arduino имеет *10* по умолчанию.
+```
+  Расширен функционал analogRead(bits): позволяет АЦП считывать 8, 10 или 12 бит в обычном режиме или 13-16 бит с использованием передискретизации и децимации. Это работает со всеми аналоговыми функциями чтения, включая analogRead(uint8_t pin), заданными в Arduino IDE(https://www.arduino.cc/en/Reference/analogRead см. страницы 853 и 862 таблицы данных. Arduino имеет *10* по умолчанию.
 
  * ***8***, ***10***, ***12*** bit = 1 sample 
  * ***13*** bit        = 4 samples 
@@ -62,7 +62,8 @@ typedef enum _mRef
  * ***15*** bit        = 64 samples 
  * ***16*** bit        = 256 samples 
 
-   //Добавлены также два варианта дифференциальных измерений.
+   Добавлены также два варианта дифференциальных измерений.
+```c++
 extern int32_t analogReadDiff( uint8_t pin_pos, uint8_t pin_neg ); 
 extern int32_t analogReadDiffRaw( uint8_t mux_pos, uint8_t mux_neg );
 
