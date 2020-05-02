@@ -287,7 +287,7 @@ void loop()
 |       |                         | mcr1, mcr2                      | 00 FF                                     |
 | 0x51	| cmd_adc_config          | nPrb_h,l, resolution_h,l, mode  | 03 00 A0 00 00                            |
 | ответ	| 			  |                                 | 00                                        |
-| 0x52	| cmd_adc_config52        | nPrb, res, gain, ref, n         | 01 0C 02 00 04                            |
+| 0x52	| cmd_adc_config52        | nPrb, bits, gain, ref           | 01 0C 02 00                               |
 | ответ	| 			  |                                 | 00                                        |
 |       |                         |                                 |                                           | 
 
