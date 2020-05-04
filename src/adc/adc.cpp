@@ -4,6 +4,7 @@
 */
 
 #include <Arduino.h>
+#include "ATSAMD21_ADC.h"
 #include "adc/adc.h"
 #include "board/mpins.h"
 
@@ -30,28 +31,56 @@ uint16_t          probeResolution[] = { 12, 12, 10, 10 };
 eAnalogReference  probeMode[]  = { AR_DEFAULT, AR_DEFAULT, AR_DEFAULT, AR_INTERNAL };
 
 // comm 52
-uint8_t prbResolution[] = {   14,   14,   10,   10 };
-uint8_t prbGain[]       = { 0x00, 0x02, 0x00, 0x00 }; // 05 - DIV2  00 - X1 
-uint8_t prbReference[]  = { 0x00, 0x00, 0x01, 0x01 }; // 02 - VCC1  01 - VCC0
+uint8_t  prbResolution[] = {   14,   14,   10,   10 };
+uint8_t  prbGain[]       = { 0x00, 0x02, 0x00, 0x00 }; // 05 - DIV2  00 - X1 
+uint8_t  prbReference[]  = { 0x00, 0x00, 0x01, 0x01 }; // 02 - VCC1  01 - VCC0
+uint16_t prbOffset[]     = { 0x0000, 0x0000, 0x0000, 0x0000 };  // Приборное смещение
+                         // 39k/2k2
+uint16_t prbFactor[]     = { 0x12ba, 0x0100, 0x0000, 0x0100 };  // Коэффициент преобразования
+
 
 void analogGain52( uint8_t prb );
 void analogRef52( uint8_t prb );
 
 void initAdc52(uint8_t n)
 {
-  analogReadExtended( prbResolution[n] ); // Расширенный функционал analogReadResolution()
   analogGain( prbGain[n] );
   analogRef( prbReference[n] ); 
+  analogReadExtended( prbResolution[n] ); // Расширенный функционал analogReadResolution()
+
+  // SerialUSB.print(n); SerialUSB.print("->");
+  // SerialUSB.print("n->"); SerialUSB.print(prbResolution[n]);
+  // SerialUSB.print("->"); SerialUSB.print(prbGain[n]);
+  // SerialUSB.print("->"); SerialUSB.print(prbReference[n]);
 } 
 
 // Преобразование данных АЦП в милливольты
+
+
+int16_t averaging(uint16_t adc, uint8_t cnt)
+{
+    switch (prbResolution[cnt])
+  {
+  case 0x0c: return adc >> 2; break;
+  case 0x0d: return adc >> 3; break;
+  case 0x0e: return adc >> 4; break;
+  case 0x0f: return adc >> 5; break;
+  default:   return adc;      break;
+  }
+}
+
+
 int16_t convertToValue(uint16_t adc, bool diff)
 {
   uint16_t maxVal = 4096;
   uint16_t ref = 3300;
 
   if(diff) maxVal /= 2;               // Не поддерживается ардуиной дифф. режим
-  return adcVoltage * ref / maxVal;
+
+  //SerialUSB.print("->"); SerialUSB.println(adc, HEX);
+
+
+  return adc * ref / maxVal;
 }
 
 
@@ -69,8 +98,9 @@ void doMeasure()
     initAdc52(cnt);
     adcVoltage = analogReadDiffRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
     //voltage = adcVoltage * 3.3 / 2048.0;
-    //voltage = (int16_t)( adcVoltage * 3300 / 2048 );
-    voltage = convertToValue(adcVoltage, true);
+    //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
+    //voltage = convertToValue(adcVoltage, true);
+  voltage = averaging(adcVoltage, cnt);
 
     #ifdef DEBUG_ADC
       SerialUSB.print("V= "); SerialUSB.println(voltage, 2);

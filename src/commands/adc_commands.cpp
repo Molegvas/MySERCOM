@@ -39,7 +39,9 @@ extern uint16_t         probeReference[];
 extern uint8_t prbResolution[];
 extern uint8_t prbGain[];
 extern uint8_t prbReference[];
-//extern uint8_t prbReserve[];
+extern uint16_t prbOffset[];  // Приборное смещение
+extern uint16_t prbFactor[];  // Коэффициент преобразования
+
 
 // отправить данные измерений
 void doReadProbes()
@@ -90,15 +92,16 @@ void doAdcConfig()
 
 void doAdcConfig52()
 {
-  if( rxNbt == 4 )
+  if( rxNbt == 8 )
   {
-    uint8_t  _probe       = rxDat[0] & 0x03;      // 0-1-2-3 - U, I, D, C
-    prbResolution[_probe] = rxDat[1];
-    prbGain      [_probe] = rxDat[2];
-    prbReference [_probe] = rxDat[3];
-    //prbReserve   [_probe] = rxDat[4];
+    uint8_t  _probe       = rxDat[0] & 0x03;  // 0-1-2-3 - U, I, D, C
+    prbResolution[_probe] = rxDat[1];         // bytes  (8...12, 13, 14, 15, 16)
+    prbGain      [_probe] = rxDat[2];         // gain   (0...5: X1, X2, X4, X8, X16, DIV2)
+    prbReference [_probe] = rxDat[3];         // reference (0...4: 1V, 1/1.48VDDA, 1/2VDDA, ExtA, ExtB)
+    prbOffset    [_probe] = get16(4);         // offset (+/- mV)
+    prbFactor    [_probe] = get16(6);         // factor (R/R << 8)
 
-    //testReply( 4 );
+    //testReply( 8 );
     txReplay( 1, 0 );         // Об ошибках не сообщается - исправляются автоматически при конфигурировании
   }
   else
