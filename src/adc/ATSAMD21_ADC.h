@@ -25,15 +25,6 @@ int16_t analogDifferential(uint8_t pin_pos,uint8_t pin_neg);
 // The DAC is not automatically shut off either. See datasheet page
 int16_t analogDifferentialRaw(uint8_t mux_pos,uint8_t mux_neg); 
 
-//====================== moro ========================
-
-// same as the above function, but no error checking, no pin types are changed, 
-// and the positive and negative inputs are the raw values being input. 
-// The DAC is not automatically shut off either. See datasheet page
-int32_t analogReadDiffRaw( uint8_t mux_pos,uint8_t mux_neg ); 
-
-//====================================================
-
 // sets the gain of the ADC. See page 868. All values defined above. 
 void analogGain(uint8_t gain); 
 
@@ -44,8 +35,9 @@ void analogGain(uint8_t gain);
 void analogCalibrate(); 
 
 //================== moro ==============
-void analogRef( uint8_t ref );
+void analogReadConfig( uint8_t bits, uint8_t samples, uint8_t divider ); 
 
+void analogRef( uint8_t ref );
 //======================================
 
 // set the analog reference voltage, but with all available options

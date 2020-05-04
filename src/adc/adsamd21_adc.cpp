@@ -110,20 +110,28 @@ uint8_t analogReadExtended(uint8_t bits)
   switch(bits) {
     case 8:
       ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
+            //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+
       ADC->AVGCTRL.bit.ADJRES = 0x0;
+      //ADC->AVGCTRL.bit.ADJRES = 0x4;      // /16
       ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
+      //ADC->AVGCTRL.bit.SAMPLENUM = 0x4;   // *16
       return 0;
     break;
 
     case 10:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_10BIT_Val;
+      //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_10BIT_Val;
+            ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+
       ADC->AVGCTRL.bit.ADJRES = 0x0;
       ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
       return 0;
     break;
     
     case 12:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_12BIT_Val;
+      //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_12BIT_Val;
+            ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+
       ADC->AVGCTRL.bit.ADJRES = 0x0;
       ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
       return 0;
@@ -162,6 +170,16 @@ uint8_t analogReadExtended(uint8_t bits)
     break;
   }
 }
+
+//===================== moro ==========================
+void analogReadConfig( uint8_t bits, uint8_t samples, uint8_t divider )
+{
+  ADC->CTRLB.bit.RESSEL      = bits;
+  ADC->AVGCTRL.bit.ADJRES    = divider;
+  ADC->AVGCTRL.bit.SAMPLENUM = samples;
+} 
+//=====================================================
+
 
 // returns the internal pin value of the specified pin, useful
 // for analogDifferentialRaw function
@@ -255,46 +273,6 @@ int16_t analogDifferentialRaw(uint8_t mux_pos,uint8_t mux_neg)
   return value_read;
 }
 
-//====================== moro ========================
-
-// same as the above function, but no error checking, no pin types are changed, 
-// and the positive and negative inputs are the raw values being input. 
-// The DAC is not automatically shut off either. See datasheet page
-int32_t analogReadDiffRaw( uint8_t mux_pos,uint8_t mux_neg ) 
-{
-  int32_t valueRead = 0;
-
-  syncADC();
-  ADC->INPUTCTRL.bit.MUXPOS = mux_pos; // Selection for the positive ADC input
-  ADC->INPUTCTRL.bit.MUXNEG = mux_neg; // negative ADC input
-	
-  syncADC();
-  ADC->CTRLA.bit.ENABLE = 0x01; // enable adc
-  ADC->CTRLB.bit.DIFFMODE = 1; // set to differential mode
-
-  syncADC();
-  ADC->SWTRIG.bit.START = 1; // start conversion
-
-  ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY; // clear the data ready flag
-  syncADC();
-
-  ADC->SWTRIG.bit.START = 1; // restart conversion, as changing inputs messes up first conversion
-  
-  while(ADC->INTFLAG.bit.RESRDY == 0);   // Wait for conversion to complete
-  valueRead = ADC->RESULT.reg; // read the value
-
-  syncADC();
-  ADC->CTRLA.bit.ENABLE = 0x00; // disable adc
-  ADC->CTRLB.bit.DIFFMODE = 0; // put back into single-ended mode
-  ADC->INPUTCTRL.bit.MUXNEG = ADC_PIN_GND; // set back muxneg to internal ground
-  syncADC();
-
-  return valueRead;
-}
-
-
-//====================================================
-
 // sets the gain of the ADC. See page 868. All values defined above. 
 void analogGain(uint8_t gain) 
 {
@@ -304,7 +282,8 @@ void analogGain(uint8_t gain)
 }
 
 // calibrates the bias and linearity based on the nvm register. 
-// NVM register access code modified from https://github.com/arduino/ArduinoCore-samd/blob/master/cores/arduino/USB/samd21_host.c
+// NVM register access code modified from
+// https://github.com/arduino/ArduinoCore-samd/blob/master/cores/arduino/USB/samd21_host.c
 // datasheet pages 32 and 882
 void analogCalibrate() 
 { 
@@ -336,7 +315,7 @@ void analogRef( uint8_t ref )
       ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INT1V_Val;   // 1.0V voltage reference
       break;
 
-    case MR_INTVCC0:          // 1/1.6 VDDANA           Уточнить!!!!!!!!!!!!!!!!!!!!!!! 1.48
+    case MR_INTVCC0:          // 1/1.48 VDDANA
       ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC0_Val; // 1/1.48 VDDANA = 1/1.48* 3V3 = 2.2297
       break;
 
@@ -352,14 +331,12 @@ void analogRef( uint8_t ref )
       ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_AREFB_Val;
       break;
 
-    default:                                                      // 
+    default:
       ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INT1V_Val;   // 1.0V voltage reference
       break;
-  }      
+  }
+  syncADC();     
 }
-
-
-
 //======================================
 
 // set the analog reference voltage, but with all available options

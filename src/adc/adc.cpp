@@ -38,6 +38,10 @@ uint16_t prbOffset[]     = { 0x0000, 0x0000, 0x0000, 0x0000 };  // Прибор�
                          // 39k/2k2
 uint16_t prbFactor[]     = { 0x12ba, 0x0100, 0x0000, 0x0100 };  // Коэффициент преобразования
 
+// comm 53
+uint8_t adcBits   [] = { 0x01, 0x01, 0x01, 0x01 };  // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
+uint8_t adcSamples[] = { 0x03, 0x03, 0x04, 0x04 };  // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
+uint8_t adcDivider[] = { 0x04, 0x04, 0x04, 0x04 };  // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
 
 void analogGain52( uint8_t prb );
 void analogRef52( uint8_t prb );
@@ -46,7 +50,10 @@ void initAdc52(uint8_t n)
 {
   analogGain( prbGain[n] );
   analogRef( prbReference[n] ); 
-  analogReadExtended( prbResolution[n] ); // Расширенный функционал analogReadResolution()
+  //analogReadExtended( prbResolution[n] ); // Расширенный функционал analogReadResolution()
+
+  analogReadConfig( adcBits[n], adcSamples[n], adcDivider[n] ); 
+
 
   // SerialUSB.print(n); SerialUSB.print("->");
   // SerialUSB.print("n->"); SerialUSB.print(prbResolution[n]);
@@ -95,12 +102,14 @@ void doMeasure()
   switch (cnt)
   {
   case 0:
-    initAdc52(cnt);
-    adcVoltage = analogReadDiffRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
+    initAdc52(cnt);               // настройка усиления и опоры
+      analogReadConfig( adcBits[cnt], adcSamples[cnt], adcDivider[cnt] ); //настройка АЦП
+
+    adcVoltage = analogDifferentialRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
     //voltage = adcVoltage * 3.3 / 2048.0;
     //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
     //voltage = convertToValue(adcVoltage, true);
-  voltage = averaging(adcVoltage, cnt);
+  voltage = adcVoltage;   //averaging(adcVoltage, cnt);
 
     #ifdef DEBUG_ADC
       SerialUSB.print("V= "); SerialUSB.println(voltage, 2);
@@ -109,7 +118,9 @@ void doMeasure()
 
   case 1:
     initAdc52(cnt);
-    adcCurrent = analogReadDiffRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
+      analogReadConfig( adcBits[cnt], adcSamples[cnt], adcDivider[cnt] ); //настройка АЦП
+
+    adcCurrent = analogDifferentialRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
     //current = adcCurrent * 3.3 / 2048.0;
     current = convertToValue(adcCurrent, true);
     
@@ -123,6 +134,8 @@ void doMeasure()
 
   case 3:
     initAdc52(cnt);
+      analogReadConfig( adcBits[cnt], adcSamples[cnt], adcDivider[cnt] ); //настройка АЦП
+
     adcCelsius = analogRead( MPins::rtu_pin );
     //celsius = adcCelsius * 2.2297 / 1024.0 ;
     celsius = convertToValue(adcCelsius, false);

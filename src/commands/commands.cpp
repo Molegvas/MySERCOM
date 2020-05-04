@@ -34,7 +34,8 @@ static constexpr uint8_t cmd_pid_test           = 0x46; // mode, setpoint, min, 
 static constexpr uint8_t cmd_adc_read_probes    = 0x50; // Read all probes
 static constexpr uint8_t cmd_adc_config         = 0x51; // probe, resolution, mode
 static constexpr uint8_t cmd_adc_config52       = 0x52; // probe, resolution, gain, reference
-static constexpr uint8_t cmd_adc_read_mv        = 0x53; // Read probes, mV
+static constexpr uint8_t cmd_adc_config53       = 0x53; // probe, resolution, samples, divider
+static constexpr uint8_t cmd_adc_read_mv        = 0x54; // Read probes, mV
 
 static constexpr uint8_t cmd_set_adc_bat        = 0x55;
 static constexpr uint8_t cmd_set_adc_shunt      = 0x56;
@@ -129,6 +130,14 @@ void doCommand()
         doAdcConfig52();
         #ifdef DEBUG_COMMANDS
           SerialUSB.println("Probe Config52 done");
+        #endif
+        break;
+
+        // probe, resolution, samples, divider
+      case cmd_adc_config53 :
+        doAdcConfig53();
+        #ifdef DEBUG_COMMANDS
+          SerialUSB.println("Probe Config53 done");
         #endif
         break;
 
