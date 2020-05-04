@@ -4,7 +4,7 @@
 */
 
 #include <Arduino.h>
-#include "ATSAMD21_ADC.h"
+#include "atsamd21_adc.h"
 #include "adc/adc.h"
 #include "board/mpins.h"
 
