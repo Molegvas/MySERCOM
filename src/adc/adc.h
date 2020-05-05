@@ -9,7 +9,7 @@
 #include "stdint.h"
 
 
-void initAdc52(uint8_t n);
+void initAdc(uint8_t n);
 void doMeasure(); 
 
 #endif  //!_ADC_H_

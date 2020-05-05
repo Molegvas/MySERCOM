@@ -25,12 +25,10 @@ void setup()
   delay(1);
 
   // инициализация UART порта ( D0:PA11/UART-RX, D1:PA10/UART-TX )
-  Serial1.begin(115200);
+  Serial1.begin(115200);            // это не порт монитора
 
-  wakeInit( 0x00, 500 );           // Без адреса, время ожидания, ms
-  //initAdc();
-  initAdc52(0);
-
+  wakeInit( 0x00, 500 );            // обмен без адреса, время ожидания, ms
+  initAdc(0);                       // не обязательно
 
 }
 

@@ -9,9 +9,9 @@
 
 
 void doReadProbes();
-void doAdcConfig();
-void doAdcConfig52();
-void doAdcConfig53();   // probe, resolution, samples, divider
+void doAdcConfig();     // параметры измерителя
+              //void doAdcConfig52();
+void doAdcConfig52();   // параметры АЦП
 void doReadValues();    // Чтение данных в физических величинах ( милливольты, миллиамперы, миллиградусы )
 
 

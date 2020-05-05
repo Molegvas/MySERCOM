@@ -96,80 +96,80 @@ static void syncDAC()
 // taken from Arduino IDE, changes the pin to an input:
 int pinPeripheral( uint32_t ulPin, EPioType ulPeripheral );
 
-uint8_t analogReadExtended(uint8_t bits) 
-{
-  /*
-  * Allows for adc to read 8, 10, or 12 bits normally or 13-16 bits using oversampling and decimation.
-  * See pages 853 & 862
-  * 8,10,12 bit = 1 sample ~ 436 microseconds
-  * 13 bit = 4 samples ~ 1668 microseconds
-  * 14 bit = 16 samples ~ 6595 microseconds
-  * 15 bit = 64 samples ~ 26308 microseconds
-  * 16 bit = 256 samples ~ 105156 microseconds
-  */
-  switch(bits) {
-    case 8:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
-            //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+// uint8_t analogReadExtended(uint8_t bits) 
+// {
+//   /*
+//   * Allows for adc to read 8, 10, or 12 bits normally or 13-16 bits using oversampling and decimation.
+//   * See pages 853 & 862
+//   * 8,10,12 bit = 1 sample ~ 436 microseconds
+//   * 13 bit = 4 samples ~ 1668 microseconds
+//   * 14 bit = 16 samples ~ 6595 microseconds
+//   * 15 bit = 64 samples ~ 26308 microseconds
+//   * 16 bit = 256 samples ~ 105156 microseconds
+//   */
+//   switch(bits) {
+//     case 8:
+//       ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
+//             //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
 
-      ADC->AVGCTRL.bit.ADJRES = 0x0;
-      //ADC->AVGCTRL.bit.ADJRES = 0x4;      // /16
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
-      //ADC->AVGCTRL.bit.SAMPLENUM = 0x4;   // *16
-      return 0;
-    break;
+//       ADC->AVGCTRL.bit.ADJRES = 0x0;
+//       //ADC->AVGCTRL.bit.ADJRES = 0x4;      // /16
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
+//       //ADC->AVGCTRL.bit.SAMPLENUM = 0x4;   // *16
+//       return 0;
+//     break;
 
-    case 10:
-      //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_10BIT_Val;
-            ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+//     case 10:
+//       //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_10BIT_Val;
+//             ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
 
-      ADC->AVGCTRL.bit.ADJRES = 0x0;
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
-      return 0;
-    break;
+//       ADC->AVGCTRL.bit.ADJRES = 0x0;
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
+//       return 0;
+//     break;
     
-    case 12:
-      //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_12BIT_Val;
-            ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+//     case 12:
+//       //ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_12BIT_Val;
+//             ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
 
-      ADC->AVGCTRL.bit.ADJRES = 0x0;
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
-      return 0;
-    break;
+//       ADC->AVGCTRL.bit.ADJRES = 0x0;
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x0;
+//       return 0;
+//     break;
       
-    case 13:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
-      ADC->AVGCTRL.bit.ADJRES = 0x1;
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x2;
-      return 0;
-    break;
+//     case 13:
+//       ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+//       ADC->AVGCTRL.bit.ADJRES = 0x1;
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x2;
+//       return 0;
+//     break;
     
-    case 14:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
-      ADC->AVGCTRL.bit.ADJRES = 0x2;
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x4;
-      return 0;
-    break;
+//     case 14:
+//       ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+//       ADC->AVGCTRL.bit.ADJRES = 0x2;
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x4;
+//       return 0;
+//     break;
     
-    case 15:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
-      ADC->AVGCTRL.bit.ADJRES = 0x1;
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x6;
-      return 0;
-    break;
+//     case 15:
+//       ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+//       ADC->AVGCTRL.bit.ADJRES = 0x1;
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x6;
+//       return 0;
+//     break;
     
-    case 16:
-      ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
-      ADC->AVGCTRL.bit.ADJRES = 0x0;
-      ADC->AVGCTRL.bit.SAMPLENUM = 0x8;
-      return 0;
-    break;
+//     case 16:
+//       ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_16BIT_Val;
+//       ADC->AVGCTRL.bit.ADJRES = 0x0;
+//       ADC->AVGCTRL.bit.SAMPLENUM = 0x8;
+//       return 0;
+//     break;
     
-    default:
-      return -1;
-    break;
-  }
-}
+//     default:
+//       return -1;
+//     break;
+//   }
+// }
 
 //===================== moro ==========================
 void analogReadConfig( uint8_t bits, uint8_t samples, uint8_t divider )

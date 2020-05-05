@@ -31,17 +31,13 @@ extern int16_t current;
 extern int16_t reserve;
 extern int16_t celsius;
 
+// comm 51 параметры измерения
+extern uint8_t  prbReference[];     // опорное напряжение
+extern uint8_t  prbGain[];          // усиление
+extern int16_t  prbOffset[];        // приборное смещение
+extern uint16_t prbDivider[];       // коэффициент преобразования в физическую величину
 
-extern uint16_t         probeResolution[];
-extern eAnalogReference probeMode[];
-extern uint16_t         probeReference[];
-// comm 52
-extern uint8_t prbResolution[];
-extern uint8_t prbGain[];
-extern uint8_t prbReference[];
-extern uint16_t prbOffset[];  // Приборное смещение
-extern uint16_t prbFactor[];  // Коэффициент преобразования
-// comm 53
+// comm 52 
 extern uint8_t adcBits   [];         // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
 extern uint8_t adcSamples[];         // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
 extern uint8_t adcDivider[];         // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
@@ -74,18 +70,19 @@ void doReadProbes()
   }
 }
 
-// Выбор для заданного аналогового датчика разрешения и опоры.
-// Ошибки ввода исправляются автоматически без сообщения
+// Выбор параметров для заданного аналогового датчика
 void doAdcConfig()
 {
-  if( rxNbt == 5 )
+  if( rxNbt == 7 )
   {
-    uint8_t  _probe         = rxDat[0] & 0x03;              // 0-1-2-3 - U, I, D, C
-    probeResolution[_probe] = get16(1);
-    probeMode [_probe] = (eAnalogReference)get16(3);   // mode
+    uint8_t prb = rxDat[0] & 0x03;  // индекс датчика (0...3: U, I, D, C
+    prbReference[prb]   = rxDat[1]; // выбор опорного напряжения(0...4: 1V, 1/1.48VDDA, 1/2VDDA, ExtA, ExtB)
+    prbGain[prb]        = rxDat[2]; // выбор усиления (0...5: X1, X2, X4, X8, X16, DIV2)
+    prbOffset[prb]      = get16(3); // приборное смещение
+    prbDivider[prb]     = get16(5); // коэффициент преобразования в физическую величину
 
-//    testReply( 5 );
-    txReplay( 1, 0 );                   // Об ошибках не сообщается - исправляются автоматически
+//    testReply( 7 );
+    txReplay( 1, 0 );                   // Об ошибках параметров не сообщается
   }
   else
   {
@@ -93,27 +90,27 @@ void doAdcConfig()
   }   
 }
 
+// void doAdcConfig52()
+// {
+//   if( rxNbt == 8 )
+//   {
+//     uint8_t  _probe       = rxDat[0] & 0x03;  // 0-1-2-3 - U, I, D, C
+//     prbResolution[_probe] = rxDat[1];         // bits   (8...12, 13, 14, 15, 16)
+//     prbGain      [_probe] = rxDat[2];         // gain   (0...5: X1, X2, X4, X8, X16, DIV2)
+//     prbReference [_probe] = rxDat[3];         // reference (0...4: 1V, 1/1.48VDDA, 1/2VDDA, ExtA, ExtB)
+//     prbOffset    [_probe] = get16(4);         // offset (+/- mV)
+//     prbFactor    [_probe] = get16(6);         // factor (R/R << 8)
+
+//     //testReply( 8 );
+//     txReplay( 1, 0 );         // Об ошибках не сообщается - исправляются автоматически при конфигурировании
+//   }
+//   else
+//   {
+//     txReplay(1, err_tx);      // ошибка протокола
+//   }   
+// }
+
 void doAdcConfig52()
-{
-  if( rxNbt == 8 )
-  {
-    uint8_t  _probe       = rxDat[0] & 0x03;  // 0-1-2-3 - U, I, D, C
-    prbResolution[_probe] = rxDat[1];         // bits   (8...12, 13, 14, 15, 16)
-    prbGain      [_probe] = rxDat[2];         // gain   (0...5: X1, X2, X4, X8, X16, DIV2)
-    prbReference [_probe] = rxDat[3];         // reference (0...4: 1V, 1/1.48VDDA, 1/2VDDA, ExtA, ExtB)
-    prbOffset    [_probe] = get16(4);         // offset (+/- mV)
-    prbFactor    [_probe] = get16(6);         // factor (R/R << 8)
-
-    //testReply( 8 );
-    txReplay( 1, 0 );         // Об ошибках не сообщается - исправляются автоматически при конфигурировании
-  }
-  else
-  {
-    txReplay(1, err_tx);      // ошибка протокола
-  }   
-}
-
-void doAdcConfig53()
 {
   if( rxNbt == 4 )
   {

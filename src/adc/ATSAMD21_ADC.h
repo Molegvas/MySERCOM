@@ -11,7 +11,7 @@
 // taken from Arduino IDE, changes the pin to an input:
 int pinPeripheral( uint32_t ulPin, EPioType ulPeripheral );
 
-uint8_t analogReadExtended(uint8_t bits);
+//uint8_t analogReadExtended(uint8_t bits);
 
 // returns the internal pin value of the specified pin, useful
 // for analogDifferentialRaw function
