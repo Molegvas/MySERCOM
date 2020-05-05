@@ -19,59 +19,53 @@
 
    ###          Особенности реализации управления измерениями.
 
-Особенности в выборе параметров АЦП - кроме разрешения - с ним все ясно. Поддержка выбора усиления и опоры в Arduino своеобразна и сведена к выбору режима (mode), ограничивая выбор - произведена замена на раздельное задание всех трех параметров.
-```c++ 
-// wiring_analog.h, wiring_analog.c
+   Конфигурирование канала измерения разделено на конфигурирование АЦП (разрядность, усреднение, см. страницы 853 и 862) и датчика (опорное напряжение, усиление, приборное смещение и коэффициент преобразования данных в физическую величину.
 
-// Arduino (было)
-typedef enum _eAnalogReference
-{
-  AR_DEFAULT,
-  AR_INTERNAL,
-  AR_EXTERNAL,
-  AR_INTERNAL1V0,
-  AR_INTERNAL1V65,
-  AR_INTERNAL2V23
-} eAnalogReference ;
+#### Выбор разрядности АЦП
+* 0x00 - 12бит 
+* 0x01 - 16бит (режим с накоплением измерений)
+* 0x02 - 10бит
+* 0x03 -  8бит
 
-// Замена (стало)
-typedef enum _mGain
-{
-  MG_GAIN_1X,
-  MG_GAIN_2X,
-  MG_GAIN_4X,
-  MG_GAIN_8X,
-  MG_GAIN_16X,
-  MG_GAIN_DIV2
-} mGain;
+#### Выбор количества накоплений АЦП
+* 0x00 - 1 
+* 0x01 - 2
+* 0x02 - 4
+* 0x03 - 8
+* 0x04 - 16 
+* 0x05 - 32 (большими значениями пользоваться проблематично из-за длительного периода ожидания ответа)
+* 0x06 - 64
+* 0x07 - 128
+* 0x08 - 256 
+* 0x09 - 512
+* 0x0a - 1024
 
+#### Выбор делителя для накоплений АЦП
+* 0x00 - 1 
+* 0x01 - 2
+* 0x02 - 4
+* 0x03 - 8
+* 0x00 - 16 
+* 0x01 - 32
+* 0x02 - 64
+* 0x03 - 128
+
+#### Выбор усиления в канале измерения
+* 0x00 - GAIN_1X
+* 0x01 - GAIN_2X
+* 0x02 - GAIN_4X
+* 0x03 - GAIN_8X
+* 0x04 - GAIN_16X
+* 0x05 - GAIN_DIV2
+
+#### Выбор опорного напряжения в канале измерения
+ 
 typedef enum _mRef
-{
-  MR_INTREF,          // Internal Bandgap Reference
-  MR_INTVCC0,         // 1/1.48 VDDANA
-  MR_INTVCC1,         // 1/2 VDDANA
-  MR_AREFA,           // External Reference
-  MR_AREFB,           // External Reference nu
-} mRef;
-```
-  Расширен функционал analogRead(bits): позволяет АЦП считывать 8, 10 или 12 бит в обычном режиме или 13-16 бит с использованием передискретизации и децимации. Это работает со всеми аналоговыми функциями чтения, включая analogRead(uint8_t pin), заданными в Arduino IDE(https://www.arduino.cc/en/Reference/analogRead см. страницы 853 и 862 таблицы данных. Arduino имеет *10* по умолчанию.
-
- * ***8***, ***10***, ***12*** bit = 1 sample 
- * ***13*** bit        = 4 samples 
- * ***14*** bit        = 16 samples 
- * ***15*** bit        = 64 samples 
- * ***16*** bit        = 256 samples 
-
-   Добавлены также два варианта дифференциальных измерений.
-```c++
-extern int32_t analogReadDiff( uint8_t pin_pos, uint8_t pin_neg ); 
-extern int32_t analogReadDiffRaw( uint8_t mux_pos, uint8_t mux_neg );
-
-```
- Conversion range:
-Что такое -Vref - не понятно. Будем руководствоваться здравым смыслом. За рамки - ни-ни.
-* Vref [1v to VDDANA - 0.6V]
-* ADCx * GAIN [0V to -Vref]
+* 0x00 - INTREF          Internal Bandgap Reference
+* 0x01 - INTVCC0         1/1.48 VDDANA
+* 0x02 - INTVCC1         1/2 VDDANA
+* 0x03 - AREFA           External Reference A
+* 0x04 - AREFB           External Reference B (nu)
 
  #### Измерение напряжения
    Измерение напряжения предполагается в диапазоне от -0,2В до +20,0В. Режим АЦП - дифференциальный. Опорное напряжение и усиление - подбор не должен вызвать затруднение, всё достаточно прозрачно. Если получится реализовать вариант со сдвигом по напряжению на 200мВ минусовой клеммы, то обработка неправильной полярности подключения не потребует аппаратной поддержки. 
@@ -285,9 +279,9 @@ void loop()
 | ответ	| 			  | adcU_h,l, adcI_h,l, 	    | 1F 00 1F 00                               |
 |    	| 			  | adcD_h,l, adcC_h,l,             | 1F 00 1F 00                               |
 |       |                         | mcr1, mcr2                      | 00 FF                                     |
-| 0x51	| cmd_adc_config          | nPrb_h,l, resolution_h,l, mode  | 03 00 A0 00 00                            |
+| 0x52	| cmd_adc_config52        | nPrb, gain, ref, offset, mult   | 01 00 02 00 00 01 00                      |
 | ответ	| 			  |                                 | 00                                        |
-| 0x52	| cmd_adc_config52        | nPrb, bits, gain, ref           | 01 0C 02 00                               |
+| 0x53	| cmd_adc_config53        | nPrb, bits, samples, divider    | 01 01 02 03                               |
 | ответ	| 			  |                                 | 00                                        |
 |       |                         |                                 |                                           | 
 
