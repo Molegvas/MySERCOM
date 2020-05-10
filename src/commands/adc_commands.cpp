@@ -228,14 +228,31 @@ void doReadValues()
   }
 }
 
-// Команды ... резервные
+// Команды настройки измерителя
+// comm 0x55 Настройка измерителя напряжения
 void doAdcBat()
 {
-    if( rxNbt == 4 )
+    if( rxNbt == 10 )
   {
-    uint8_t err   = 0x00;
-    // ...
-    txReplay( 1, err );
+    uint8_t err           = 0x00;
+    constexpr uint8_t prb = 0x00; // Измеритель напряжения, в [] - ориентировочные
+      // Задать все параметры измерителя [ 01 00 00 03 04 00 0000 12BA ]
+    adcBits     [prb] = rxDat[0]; // Разрешение: 0x00(12), [0x01(16)], 0x02(10), 0x03(8)
+    prbReference[prb] = rxDat[1]; // Опорное: [0x00(1V)], 0x01(1/1.48VDDA), 0x02(1/2VDDA), 0x03(ExtA)
+    prbGain     [prb] = rxDat[2]; // Усиление: [0x00(X1)], 0x01(X2), 0x03(X4), 0x04(X8), (X16), (DIV2)    
+    adcSamples  [prb] = rxDat[3]; // Накопление: 0x00(1), 0x01(2), 0x02(4), [0x03(8)], 0x04(16), ... 0x0a
+    adcDivider  [prb] = rxDat[4]; // Делитель: 0x00(2^0), 0x01(2^1), 0x02(2^2), 0x03(2^3), [0x04(2^4)]... 0x07
+    refComp    = 0x01 & rxDat[5]; // 0/1: выкл/вкл смещение АЦП
+    prbOffset   [prb] = get16(6); // Приборное смещение: 0x8000 ... 0x7fff
+    prbDivider  [prb] = get16(8); // Коэффициент преобразования в милливольты: Ku*0x0100 [0x12ba]
+      // Считать результат
+                                          // Нулевой байт - ошибки
+    txDat[1] = ( adcVoltage >> 8) & 0xFF; // Hi
+    txDat[2] =   adcVoltage       & 0xFF; // Lo
+    txDat[3] = ( voltage >> 8)    & 0xFF; // Hi
+    txDat[4] =   voltage          & 0xFF; // Lo
+
+    txReplay( 5, err );
   }
   else
   {
@@ -243,13 +260,30 @@ void doAdcBat()
   }
 }
 
+// comm 0x56 Настройка измерителя тока
 void doAdcShunt()
 {
-    if( rxNbt == 4 )
+    if( rxNbt == 10 )
   {
-    uint8_t err   = 0x00;
-    // ...
-    txReplay( 1, err );
+    uint8_t err           = 0x00;
+    constexpr uint8_t prb = 0x01; // Измеритель тока, в [] - ориентировочные
+      // Задать все параметры измерителя [ 01 00 00 03 04 00 0000 12BA ]
+    adcBits     [prb] = rxDat[0]; // Разрешение: 0x00(12), [0x01(16)], 0x02(10), 0x03(8)
+    prbReference[prb] = rxDat[1]; // Опорное: [0x00(1V)], 0x01(1/1.48VDDA), 0x02(1/2VDDA), 0x03(ExtA)
+    prbGain     [prb] = rxDat[2]; // Усиление: [0x00(X1)], 0x01(X2), 0x03(X4), 0x04(X8), (X16), (DIV2)    
+    adcSamples  [prb] = rxDat[3]; // Накопление: 0x00(1), 0x01(2), 0x02(4), [0x03(8)], 0x04(16), ... 0x0a
+    adcDivider  [prb] = rxDat[4]; // Делитель: 0x00(2^0), 0x01(2^1), 0x02(2^2), 0x03(2^3), [0x04(2^4)]... 0x07
+    refComp    = 0x01 & rxDat[5]; // 0/1: выкл/вкл смещение АЦП
+    prbOffset   [prb] = get16(6); // Приборное смещение: 0x8000 ... 0x7fff
+    prbDivider  [prb] = get16(8); // Коэффициент преобразования в миллиамперы: Ki*0x0100 [0x12ba]
+      // Считать результат
+                                          // Нулевой байт - ошибки
+    txDat[1] = ( adcCurrent >> 8) & 0xFF; // Hi
+    txDat[2] =   adcCurrent       & 0xFF; // Lo
+    txDat[3] = ( current >> 8)    & 0xFF; // Hi
+    txDat[4] =   current          & 0xFF; // Lo
+
+    txReplay( 5, err );
   }
   else
   {
@@ -257,14 +291,31 @@ void doAdcShunt()
   }
 }
 
+// comm 0x57 Настройка измерителя температуры
 void doAdcRtu()
 {
     if( rxNbt == 4 )
   {
-    uint8_t err   = 0x00;
-    // ...
-    txReplay( 1, err );
-  }
+      uint8_t err           = 0x00;
+    constexpr uint8_t prb = 0x03; // Измеритель температуры, в [] - ориентировочные
+      // Задать все параметры измерителя [ 01 00 00 03 04 00 0000 12BA ]
+    adcBits     [prb] = rxDat[0]; // Разрешение: 0x00(12), [0x01(16)], 0x02(10), 0x03(8)
+    prbReference[prb] = rxDat[1]; // Опорное: [0x00(1V)], 0x01(1/1.48VDDA), 0x02(1/2VDDA), 0x03(ExtA)
+    prbGain     [prb] = rxDat[2]; // Усиление: [0x00(X1)], 0x01(X2), 0x03(X4), 0x04(X8), (X16), (DIV2)    
+    adcSamples  [prb] = rxDat[3]; // Накопление: 0x00(1), 0x01(2), 0x02(4), [0x03(8)], 0x04(16), ... 0x0a
+    adcDivider  [prb] = rxDat[4]; // Делитель: 0x00(2^0), 0x01(2^1), 0x02(2^2), 0x03(2^3), [0x04(2^4)]... 0x07
+    refComp    = 0x01 & rxDat[5]; // 0/1: выкл/вкл смещение АЦП
+    prbOffset   [prb] = get16(6); // Приборное смещение: 0x8000 ... 0x7fff
+    prbDivider  [prb] = get16(8); // Коэффициент преобразования в миллиградусы С: Kt*0x0100 [0x12ba]
+      // Считать результат
+                                          // Нулевой байт - ошибки
+    txDat[1] = ( adcCelsius >> 8) & 0xFF; // Hi
+    txDat[2] =   adcCelsius       & 0xFF; // Lo
+    txDat[3] = ( celsius >> 8)    & 0xFF; // Hi
+    txDat[4] =   celsius          & 0xFF; // Lo
+
+    txReplay( 5, err );
+    }
   else
   {
     txReplay(1, err_tx);
