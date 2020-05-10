@@ -306,6 +306,15 @@ void analogCalibrate()
 }
 
 //================== moro ==============
+
+// void analogRefCompens( uint8_t val)
+// {
+//   analogReferenceCompensation(val);
+// }
+
+// set the analog reference voltage, but with all available options
+// (the Arduino IDE neglects some). The Arduino IDE also changes
+// the gain when analogReference() is used, but this won't. pg 861
 void analogRef( uint8_t ref )
 {
   syncADC();
@@ -349,8 +358,13 @@ void analogReference2(uint8_t ref)
   syncADC();
 }
 
-// increases accuracy of gain stage by enabling the reference buffer
-// offset compensation. Takes longer to start. pg 861
+// The accuracy of the gain stage can be increased by enabling the reference buffer
+// offset compensation. This will decrease the input impedance and thus
+// increase the start-up time of the reference. See datasheet page 861.
+// Arduino has it disabled by default.
+// 0 - disable the reference buffer offset compensation
+// 1 - enable the reference buffer offset compensation
+
 void analogReferenceCompensation(uint8_t val) 
 {
   if(val>0) val = 1; 

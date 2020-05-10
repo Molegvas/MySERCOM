@@ -7,6 +7,7 @@
             "name": "Win32",
             "includePath": [
                 "e:/GitHub/MySERCOM/lib/FastPID/src",
+                "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
                 "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13",
                 "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13@1.6.1",
                 "C:/Users/OLMORO/.platformio/lib/Adafruit SSD1306_ID135",
@@ -23,7 +24,6 @@
                 "C:/Users/OLMORO/.platformio/lib/U8g2_ID942/src",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/HID",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/I2S/src",
-                "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SAMD_BootloaderUpdater/src",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SDU/src",
                 "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SPI",
@@ -42,6 +42,7 @@
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
                     "e:/GitHub/MySERCOM/lib/FastPID/src",
+                    "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
                     "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13",
                     "C:/Users/OLMORO/.platformio/lib/Adafruit GFX Library_ID13@1.6.1",
                     "C:/Users/OLMORO/.platformio/lib/Adafruit SSD1306_ID135",
@@ -58,7 +59,6 @@
                     "C:/Users/OLMORO/.platformio/lib/U8g2_ID942/src",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/HID",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/I2S/src",
-                    "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SAMD_BootloaderUpdater/src",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SDU/src",
                     "C:/Users/OLMORO/.platformio/packages/framework-arduino-samd/libraries/SPI",

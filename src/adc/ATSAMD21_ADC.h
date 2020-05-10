@@ -36,7 +36,7 @@ void analogCalibrate();
 
 //================== moro ==============
 void analogReadConfig( uint8_t bits, uint8_t samples, uint8_t divider ); 
-
+//void analogRefCompens( uint8_t val);
 void analogRef( uint8_t ref );
 //======================================
 
@@ -56,5 +56,11 @@ void analogPrescaler(uint8_t val);
 // note that this doesn't put back the default values set by the 
 // Arduino IDE. 
 void analogReset();
+
+//============ moro ========================
+// https://github.com/aswild/samd21
+
+
+//==========================================
 
 #endif //!_ATSAMD21_ADC_H_

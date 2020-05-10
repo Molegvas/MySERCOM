@@ -35,19 +35,35 @@ uint8_t  prbGain[]      = { 0x00, 0x02, 0x00, 0x00 };             // 05 - DIV2  
 int16_t  prbOffset[]    = { 0x0000, 0x0000, 0x0000, 0x0000 };     // Приборные смещения
 uint16_t prbDivider[]   = { u_divider, 0x0100, 0x0000, 0x0100 };  // Коэффициенты преобразования
 
+// comm 52
+uint8_t adcBits   [] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
+uint8_t adcSamples[] = { 0x03, 0x03, 0x00, 0x04 };  // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
+uint8_t adcDivider[] = { 0x04, 0x04, 0x00, 0x04 };  // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
+uint8_t adcRefComp[] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00, 0x01  - Резервная позиция
+// adcRefComp = 0/1 отключить/включить коррекцию смещения и усиления,
+// результат АЦП будет автоматически откорректирован по формуле
+// Result = ( Conversion value - OFFSETCORR ) * GAINCORR
+uint8_t refComp = 0x01; 
+
+
+
 // comm 53
-uint8_t adcBits   [] = { 0x01, 0x01, 0x01, 0x01 };  // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
-uint8_t adcSamples[] = { 0x03, 0x03, 0x04, 0x04 };  // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
-uint8_t adcDivider[] = { 0x04, 0x04, 0x04, 0x04 };  // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
+// offsetCorr = 
+
+// gainCorr   = 
+
 
 
 void initAdc(uint8_t n)
 {
   // параметры АЦП
   analogReadConfig( adcBits[n], adcSamples[n], adcDivider[n] ); 
+  //analogReferenceCompensation( adcRefComp[n] );   // автокомпенсация начального смещения (выкл или вкл)
+  analogReferenceCompensation( refComp );   // автокомпенсация начального смещения (выкл или вкл)
+
   // параметры датчика (формально это тоже параметры АЦП)
-  analogGain( prbGain[n] );
-  analogRef( prbReference[n] ); 
+  //analogGain( prbGain[n] );
+  //analogRef( prbReference[n] ); 
 } 
 
 // Преобразование данных АЦП в милливольты

@@ -4,12 +4,27 @@
 
 Адаптер силового блока предназначен для соединения управляющего контроллера с силовым блоком используя минимальное количество связи и оптимизации схем измерения и управления, освобождая центральный микроконтроллер от исполнения рутинных операций.
 
+
    ###          Аппаратная поддержка
 
 Не углубляясь в причину выбора микроконтроллера в пользу семейства SAMD20 - наличие  поддержки сообществом Arduino сыграло не последнюю роль. Хотя там и нет поддержки SAMD20, но есть поддержка старшей модели SAMD21, миграция на которую, надеюсь, не составит особого труда. 
    Прототипирование выполнялось на плате SAMD21-M0-Mini. Подробности включения хорошо описаны в https://github.com/BLavery/SAMD21-M0-Mini.
-  К сожалению поддержка технологией Arduino не в полной мере соответствует потребностям проекта, но это преодолимо.
- 
+  К сожалению поддержка Arduino не в полной мере соответствует потребностям проекта, но это преодолимо.
+
+ #### особенности прототипирования на плате SAMD21-M0-Mini
+  https://github.com/BLavery/SAMD21-M0-Mini:
+ * select the board: Tools/Board = Arduino SAMD / "Arduino Zero (Native USB Port)".
+ * Double-click the board reset button. Upload. See if a LED blinks.
+ explain a bit:
+ 1. The Arduino bootloader uses double click on reset button to enter flash upload mode. Single
+    reset enters normal running mode.
+ 2. The serial/bossac mode of USB upload is included in the Arduino install.
+ 3. The regular user LED is missing. So we choose one of the TX/RX LEDs. For the moment, 
+    the Arduino sketch is NOT otherwise driving these as TX/RX indicators (see above), 
+    so we can re-employ them.
+ 4. But what pin or GPIO number? For this board, reference the pins as 0-26 or A0-A5. Not D25, 
+    nor PB03 or PB3.
+
    ###          Особенности реализации обмена между контроллерами.
 
   Протокол WAKE является логическим уровнем интерфейса управления оборудованием с помощью асинхронного последовательного канала. Физический уровень интерфейса протоколом не определяется, может использоваться, например, RS-232, RS-485 или USB. Протокол позволяет производить обмен пакетами данных (data frames) длиной до 255 байт с адресуемыми устройствами, которых может быть до 127. Формат данных может быть любым. Могут передаваться байтовые поля, многобайтовые слова или строки символов. Для контроля правильности передачи данных используется контрольная сумма (CRC-8).
