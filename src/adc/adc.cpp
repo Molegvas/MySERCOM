@@ -45,7 +45,11 @@ uint8_t adcRefComp[] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00, 0x01  - Резер�
 // Result = ( Conversion value - OFFSETCORR ) * GAINCORR
 uint8_t refComp = 0x01; 
 
+// Опорные напряжения (в милливольтах), выбор по prbReference[]
+uint16_t reference[] = { 1000u, 2230u, 1650u, 2540u, 2540u };
 
+// Усиление как коэффициент, выбор по выбор по prbGain[]
+uint16_t gain[] = { 1000u, 2000u, 4000u, 8000u, 16000u, 500u };
 
 // comm 53
 // offsetCorr = 
@@ -69,17 +73,13 @@ void initAdc(uint8_t n)
 // Преобразование данных АЦП в милливольты
 
 
-// int16_t averaging(uint16_t adc, uint8_t prb)
-// {
-//     switch (prbResolution[prb])
-//   {
-//   case 0x0c: return adc >> 2; break;
-//   case 0x0d: return adc >> 3; break;
-//   case 0x0e: return adc >> 4; break;
-//   case 0x0f: return adc >> 5; break;
-//   default:   return adc;      break;
-//   }
-// }
+int16_t convMv(uint16_t adc, uint8_t prb)
+{
+  uint16_t maxVal = 4096;
+  uint16_t ref = reference[ prb ];
+  //return (uint16_t)(adc * ref / maxVal);  // * 16;
+  return (adc / maxVal) * ref;  // * 16;
+}
 
 
 int16_t convertToValue(uint16_t adc, bool diff)
@@ -114,7 +114,8 @@ void doMeasure()
     //voltage = adcVoltage * 3.3 / 2048.0;
     //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
     //voltage = convertToValue(adcVoltage, true);
-  voltage = adcVoltage;   //averaging(adcVoltage, prb);
+  //voltage = adcVoltage;   //averaging(adcVoltage, prb);
+  voltage = (convMv( adcVoltage, prb ) * prbDivider  [prb]) / 0x100 - prbOffset[prb];
 
     #ifdef DEBUG_ADC
       SerialUSB.print("V= "); SerialUSB.println(voltage, 2);
