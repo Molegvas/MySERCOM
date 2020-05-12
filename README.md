@@ -51,6 +51,7 @@ const float b_value              =  3950.0;
 float readSteinhart( const int adc )
 {
 // https://neyasyt.ru/uploads/files/termistor-NTC-10-K-MF52.pdf
+// или https://www.drive2.ru/c/501468287926796903/
   float steinhart;
   //float tr = 4095.0 / adc - 1.0;
 
