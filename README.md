@@ -42,11 +42,11 @@
 Зарезервировано. 
  #### Измерение температуры
 ```c++
-// // MF52AT MF52 B 3950 NTC термистор 2% 10 kOm
-// const float reference_resistance = 10000.0;    // R13 10kOm 1%
-// const float nominal_resistance   = 10000.0;    //     10kOm 2%
-// const float nominal_temperature  =    25.0;
-// const float b_value              =  3950.0;
+// MF52AT MF52 B 3950 NTC термистор 2% 10 kOm
+const float reference_resistance = 10000.0;    // 10kOm 1%
+const float nominal_resistance   = 10000.0;    // 10kOm 2%
+const float nominal_temperature  =    25.0;
+const float b_value              =  3950.0;
 
 float readSteinhart( const int adc )
 {
@@ -54,8 +54,7 @@ float readSteinhart( const int adc )
   float steinhart;
   //float tr = 4095.0 / adc - 1.0;
 
-//  float tr = 3.30f / readVoltage( adc ) - 1.0f;
-  float tr = 3.30f / Board->readVoltage( adc ) - 1.0f;
+  float tr = 3.30f / readVoltage( adc ) - 1.0f;
 
   tr = reference_resistance / tr;
   steinhart = tr / nominal_resistance;                  // (R/Ro)
