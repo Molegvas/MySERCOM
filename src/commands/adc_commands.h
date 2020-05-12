@@ -7,10 +7,8 @@
 
 #include "stdint.h"
 
-
 void doReadProbes();
 void doAdcConfig();     // параметры измерителя
-              //void doAdcConfig52();
 void doAdcConfig52();   // параметры АЦП
 void doAdcRefCompensation();
 void doAdcBat();

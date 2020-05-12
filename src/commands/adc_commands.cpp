@@ -228,8 +228,8 @@ void doReadValues()
   }
 }
 
-// Команды настройки измерителя
-// comm 0x55 Настройка измерителя напряжения
+// ================ Команды настройки измерителей ================
+// Настройка измерителя напряжения (comm 0x55  'cmd_set_adc_bat')     
 void doAdcBat()
 {
     if( rxNbt == 10 )
@@ -260,7 +260,7 @@ void doAdcBat()
   }
 }
 
-// comm 0x56 Настройка измерителя тока
+// Настройка измерителя тока (comm 0x56  'cmd_set_adc_shunt')     
 void doAdcShunt()
 {
     if( rxNbt == 10 )
@@ -291,10 +291,10 @@ void doAdcShunt()
   }
 }
 
-// comm 0x57 Настройка измерителя температуры
+// Настройка измерителя температуры (comm 0x57 'cmd_set_adc_rtu')     
 void doAdcRtu()
 {
-    if( rxNbt == 4 )
+    if( rxNbt == 10 )
   {
       uint8_t err           = 0x00;
     constexpr uint8_t prb = 0x03; // Измеритель температуры, в [] - ориентировочные
