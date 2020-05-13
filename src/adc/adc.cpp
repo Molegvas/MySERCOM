@@ -24,22 +24,24 @@ uint16_t adcReserve = 0x0000;
 uint16_t adcCelsius = 0x0000;
 
 // Пересчитанные в физические величины - mV, mA, mC
-int16_t voltage = 0x0064;     //  0.10V
-int16_t current = 0xfc17;     // -1.00A
-int16_t reserve = 0x0000;
-int16_t celsius = 0x61a8;     // +25.00
+int16_t voltage     = 0x0064;     //  0.10V
+int16_t current     = 0xfc17;     // -1.00A
+int16_t reserve     = 0x0000;
+float celsius       = 25.0f;      // +25.00
+int16_t celsiusHex  = 0x09c4;     // +25.00
+
 
 // comm 51 параметры измерения
-uint8_t  prbReference[] = { 0x00, 0x00, 0x01, 0x01 };             // 02 - VCC1  01 - VCC0;
+uint8_t  prbReference[] = { 0x00, 0x00, 0x01, 0x00 };             // 02 - VCC1  01 - VCC0;
 uint8_t  prbGain[]      = { 0x00, 0x02, 0x00, 0x00 };             // 05 - DIV2  00 - X1 ;
 int16_t  prbOffset[]    = { 0x0000, 0x0000, 0x0000, 0x0000 };     // Приборные смещения
-uint16_t prbDivider[]   = { u_divider, 0x0100, 0x0000, 0x0100 };  // Коэффициенты преобразования
+uint16_t prbDivider[]   = { u_divider, 0x0100, 0x0000, 0x0000 };  // Коэффициенты преобразования
 
 // comm 52
 uint8_t adcBits   [] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
-uint8_t adcSamples[] = { 0x03, 0x03, 0x00, 0x04 };  // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
+uint8_t adcSamples[] = { 0x03, 0x03, 0x00, 0x03 };  // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
 uint8_t adcDivider[] = { 0x04, 0x04, 0x00, 0x04 };  // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
-uint8_t adcRefComp[] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00, 0x01  - Резервная позиция
+uint8_t adcRefComp[] = { 0x01, 0x01, 0x00, 0x00 };  // 0x00, 0x01  - Резервная позиция
 // adcRefComp = 0/1 отключить/включить коррекцию смещения и усиления,
 // результат АЦП будет автоматически откорректирован по формуле
 // Result = ( Conversion value - OFFSETCORR ) * GAINCORR
@@ -56,18 +58,26 @@ uint16_t gain[] = { 1000u, 2000u, 4000u, 8000u, 16000u, 500u };
 
 // gainCorr   = 
 
+// MF52AT MF52 B 3950 NTC термистор 2% 10 kOm 
+//constexpr float reference_resistance = 10000.0f;    // 10kOm 1%
+//constexpr float nominal_resistance   = 10000.0f;    // 10kOm 2%
 
+uint16_t refRes = 10000;  // 10k  последовательный
+uint16_t nomRes = 10000;  // 10k  номинал
 
+constexpr float nominal_temperature  =    25.0f;
+constexpr float b_value              =  3950.0f;
+
+float readSteinhart( const int adc );
+
+  // Установка параметров преобразования датчика:
+  // разрядность, усиление, опора, накопление, делитель, автокомпенсация
 void initAdc(uint8_t n)
 {
-  // параметры АЦП
-  analogReadConfig( adcBits[n], adcSamples[n], adcDivider[n] ); 
-  //analogReferenceCompensation( adcRefComp[n] );   // автокомпенсация начального смещения (выкл или вкл)
+  analogGain( prbGain[n] );
+  analogRef( prbReference[n] ); 
+  analogReadConfig( adcBits[n], adcSamples[n], adcDivider[n] );
   analogReferenceCompensation( refComp );   // автокомпенсация начального смещения (выкл или вкл)
-
-  // параметры датчика (формально это тоже параметры АЦП)
-  //analogGain( prbGain[n] );
-  //analogRef( prbReference[n] ); 
 } 
 
 // Преобразование данных АЦП в милливольты
@@ -108,7 +118,7 @@ void doMeasure()
   {
   case 0:
     initAdc(prb);               // настройка усиления и опоры
-      analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
+      //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
 
     adcVoltage = analogDifferentialRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
     //voltage = adcVoltage * 3.3 / 2048.0;
@@ -124,7 +134,7 @@ void doMeasure()
 
   case 1:
     initAdc(prb);
-      analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
+      //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
 
     adcCurrent = analogDifferentialRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
     //current = adcCurrent * 3.3 / 2048.0;
@@ -142,11 +152,11 @@ void doMeasure()
 
   case 3:
     initAdc(prb);
-      analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
+    //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
 
-    adcCelsius = analogRead( MPins::rtu_pin );
-    //celsius = adcCelsius * 2.2297 / 1024.0 ;
-    celsius = convertToValue(adcCelsius, false);
+    adcCelsius = analogRead( MPins::rtu_pin );  // Код АЦП (Может быть сдвинут при накоплении)
+    celsius = readSteinhart( adcCelsius );      // float 
+    celsiusHex = (int16_t)( celsius * 100.0 );  // Преобразование для передачи в int16_t
     #ifdef DEBUG_ADC
       SerialUSB.print("T= "); SerialUSB.println(celsius, 2);
     #endif
@@ -155,5 +165,22 @@ void doMeasure()
   default:
     break;
   }
+}
+
+float readSteinhart( const int adc )
+{
+// https://neyasyt.ru/uploads/files/termistor-NTC-10-K-MF52.pdf
+  float steinhart;
+  float tr = 4095.0 / adc - 1.0;
+  
+  tr = (float)refRes / tr;
+  steinhart = tr / (float)nomRes;                  // (R/Ro)
+  steinhart = log(steinhart);                           // ln(R/Ro)
+  steinhart /= b_value;                                 // 1/B * ln(R/Ro)
+  steinhart += 1.0f / (nominal_temperature + 273.15f);  // + (1/To)
+  steinhart = 1.0f / steinhart;                         // Invert
+  steinhart -= 273.15f;
+  if ( steinhart == -273.15f ) steinhart = 120.0f;    // При отсутствии датчика
+  return ( steinhart > 120.0f ) ? 120.0f : steinhart;
 }
 

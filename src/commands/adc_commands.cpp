@@ -30,7 +30,8 @@ extern uint16_t adcCelsius;  //
 extern int16_t voltage;
 extern int16_t current;
 extern int16_t reserve;
-extern int16_t celsius;
+extern int16_t celsiusHex;
+//extern float celsius;
 
 // comm 51 параметры измерения
 extern uint8_t  prbReference[];     // опорное напряжение
@@ -50,6 +51,10 @@ extern uint8_t refComp;
 //
 extern int      offsetCorrectionValue;
 extern uint16_t gainCorrectionValue;
+
+// Измеритель температуры
+extern uint16_t refRes;  // 10k  последовательный
+extern uint16_t nomRes;  // 10k  номинал
 
 // отправить данные измерений
 void doReadProbes()
@@ -211,8 +216,8 @@ void doReadValues()
     txDat[3] =   current & 0xFF;       // Lo
     txDat[4] = ( reserve >> 8) & 0xFF; // Hi
     txDat[5] =   reserve & 0xFF;       // Lo
-    txDat[6] = ( celsius >> 8) & 0xFF; // Hi
-    txDat[7] =   celsius & 0xFF;       // Lo
+    txDat[6] = ( celsiusHex >> 8) & 0xFF; // Hi
+    txDat[7] =   celsiusHex & 0xFF;       // Lo
     txDat[8] =   0x77;      // mcr1
     txDat[9] =   0x88;      // mcr2
 
@@ -294,7 +299,7 @@ void doAdcShunt()
 // Настройка измерителя температуры (comm 0x57 'cmd_set_adc_rtu')     
 void doAdcRtu()
 {
-    if( rxNbt == 10 )
+    if( rxNbt == 12 )
   {
       uint8_t err           = 0x00;
     constexpr uint8_t prb = 0x03; // Измеритель температуры, в [] - ориентировочные
@@ -306,13 +311,15 @@ void doAdcRtu()
     adcDivider  [prb] = rxDat[4]; // Делитель: 0x00(2^0), 0x01(2^1), 0x02(2^2), 0x03(2^3), [0x04(2^4)]... 0x07
     refComp    = 0x01 & rxDat[5]; // 0/1: выкл/вкл смещение АЦП
     prbOffset   [prb] = get16(6); // Приборное смещение: 0x8000 ... 0x7fff
-    prbDivider  [prb] = get16(8); // Коэффициент преобразования в миллиградусы С: Kt*0x0100 [0x12ba]
+    refRes            = get16(8);  // 10k  сопротивление последовательного резистора, ом
+    nomRes            = get16(10); // 10k  номинальное сопротивление термистора, ом
+    //prbDivider  [prb] = get16(12); // Коэффициент преобразования в миллиградусы С: Kt*0x0100 [0x12ba]
       // Считать результат
                                           // Нулевой байт - ошибки
     txDat[1] = ( adcCelsius >> 8) & 0xFF; // Hi
     txDat[2] =   adcCelsius       & 0xFF; // Lo
-    txDat[3] = ( celsius >> 8)    & 0xFF; // Hi
-    txDat[4] =   celsius          & 0xFF; // Lo
+    txDat[3] = ( celsiusHex >> 8) & 0xFF; // Hi
+    txDat[4] =   celsiusHex       & 0xFF; // Lo
 
     txReplay( 5, err );
     }

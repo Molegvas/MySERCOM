@@ -41,33 +41,14 @@
  #### Измерение тока разряда
 Зарезервировано. 
  #### Измерение температуры
-```c++
-// MF52AT MF52 B 3950 NTC термистор 2% 10 kOm
-const float reference_resistance = 10000.0;    // 10kOm 1%
-const float nominal_resistance   = 10000.0;    // 10kOm 2%
-const float nominal_temperature  =    25.0;
-const float b_value              =  3950.0;
+Для датчика типа MF52 B 3950 NTC термистор 2% 10 kOm, последовательно резистор 10 kOm, запитан от 3,3в.
+Параметры по умолчанию и задаваемые командой 0x57:
+| bits | ref | gain | sampl | div | comp | offset | ser Ohm | nom Ohm |
+|------|-----|------|-------|-----|------|--------|---------|---------|
+|  01  |  00 |  00  |   03  |  04 |  00  |  0000  |  2710   |   2710  |
+Ответ: код АЦП (2 байта) и значение температур, умноженное на 100.
+Вычисления производятся по формуле Стейнхарта.
 
-float readSteinhart( const int adc )
-{
-// https://neyasyt.ru/uploads/files/termistor-NTC-10-K-MF52.pdf
-// или https://www.drive2.ru/c/501468287926796903/
-  float steinhart;
-  //float tr = 4095.0 / adc - 1.0;
-
-  float tr = 3.30f / readVoltage( adc ) - 1.0f;
-
-  tr = reference_resistance / tr;
-  steinhart = tr / nominal_resistance;                  // (R/Ro)
-  steinhart = log(steinhart);                           // ln(R/Ro)
-  steinhart /= b_value;                                 // 1/B * ln(R/Ro)
-  steinhart += 1.0f / (nominal_temperature + 273.15f);  // + (1/To)
-  steinhart = 1.0f / steinhart;                         // Invert
-  steinhart -= 273.15f;
-  if ( steinhart == -273.15f ) steinhart = 120.0f;
-  return ( steinhart > 120.0f ) ? 120.0f : steinhart;
-}
-```
 * Конфигурирование канала измерения состоит из параметров АЦП (разрядность, усреднение, см. страницы 853 и 862) и датчика (опорное напряжение, усиление, приборное смещение, коэффициент преобразования данных в физическую величину).
 * В ответ контроллер отправляет пакет, содержащий байт ошибки (зарезервированная позиция), двухбайтный код АЦП и двухбайтное значение измеренной величины (для напряжения - в милливольтах).
 * Команды такого типа скорее исследовательские, служащие для поиска оптимальных конфигураций.
