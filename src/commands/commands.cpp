@@ -14,7 +14,25 @@
 // Имя устройства
 static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 
-//bool _powerStatus = false;
+  // state1
+bool _switchStatus          = false;  // коммутатор
+bool _converterStatus       = false;  // преобразователь
+bool _currentControlStatus  = false;  // регулирование по току
+bool _voltageControlStatus  = false;  // регулирование по напряжению
+bool _chargeStatus          = false;  // заряд
+bool _dischargeStatus       = false;  // разряд
+bool _pauseStatus           = false;  // пауза
+bool _reserve1Status        = false;  // резерв 1
+
+  // state2
+bool _overHeatingStatus     = false;  // перегрев
+bool _overloadStatus        = false;  // перегрузка
+bool _powerLimitationStatus = false;  // ограничение мощности
+bool _reversePolarityStatus = false;  // обратная полярность
+bool _shortCircuitStatus    = false;  // короткое замыкание
+bool _calibrationStatus     = false;  // калибровка
+bool _upgradeStatus         = false;  // обновление
+bool _reserve2Status        = false;  // резерв 2
 
 
     // ПИД-регулятор
@@ -63,6 +81,9 @@ extern char     txDat[frame];   //+ массив данных для перед�
 
 
 uint8_t cmd = cmd_nop;
+
+uint8_t state1 = 0b00000000;
+uint8_t state2 = 0b00000000;
 
 
 void doInfo();
@@ -155,4 +176,30 @@ void doErr()
   #ifdef DEBUG_WAKE
     Serial.println("обработка ошибки");
   #endif
+}
+
+// Формирование регистра состояния 1
+void doState1()
+{
+  _switchStatus         ? state1 |= 0b10000000 : state1 &= 0b01111111; 
+  _converterStatus      ? state1 |= 0b01000000 : state1 &= 0b10111111; 
+  _currentControlStatus ? state1 |= 0b00100000 : state1 &= 0b11011111; 
+  _voltageControlStatus ? state1 |= 0b00010000 : state1 &= 0b11101111; 
+  _chargeStatus         ? state1 |= 0b00001000 : state1 &= 0b11110111; 
+  _dischargeStatus      ? state1 |= 0b00000100 : state1 &= 0b11111011; 
+  _pauseStatus          ? state1 |= 0b00000010 : state1 &= 0b11111101; 
+  _reserve1Status       ? state1 |= 0b00000001 : state1 &= 0b11111110; 
+}
+
+// Формирование регистра состояния 2 
+void doState2()
+{
+  _overHeatingStatus     ? state2 |= 0b10000000 : state2 &= 0b01111111; 
+  _overloadStatus        ? state2 |= 0b01000000 : state2 &= 0b10111111; 
+  _powerLimitationStatus ? state2 |= 0b00100000 : state2 &= 0b11011111; 
+  _reversePolarityStatus ? state2 |= 0b00010000 : state2 &= 0b11101111; 
+  _shortCircuitStatus    ? state2 |= 0b00001000 : state2 &= 0b11110111; 
+  _calibrationStatus     ? state2 |= 0b00000100 : state2 &= 0b11111011; 
+  _upgradeStatus         ? state2 |= 0b00000010 : state2 &= 0b11111101; 
+  _reserve2Status        ? state2 |= 0b00000001 : state2 &= 0b11111110; 
 }

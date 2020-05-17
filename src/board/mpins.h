@@ -29,7 +29,7 @@ namespace MPins
 //                q920_name      arduino_pin  M0-MINI   SAMD21_name
 constexpr uint8_t uart_rx           =    0;    // D0   PA11/UART-RX             
 constexpr uint8_t uart_tx           =    1;    // D1   PA10/UART-TX  
-constexpr uint8_t foff_pin          =    2;    // D4   PA14
+constexpr uint8_t off_pin           =    2;    // D4   PA14
 constexpr uint8_t d3_pin            =    3;    // D3   PA09
 constexpr uint8_t rtu_pin           =   50;    // D3   additional analog as PA09
 constexpr uint8_t rtu_mux           =    9;    // D3   additional analog as PA09
@@ -60,13 +60,14 @@ constexpr uint8_t icsp_mosi         =   23;    //  4   PB10/MOSI ICSP           
 constexpr uint8_t icsp_sck          =   24;    //  3   PB11/SCK  ICSP              4
 constexpr uint8_t led_rx            =   25;    // no   PB03/LED1 (LED_BUILTIN, LED_RX)
 constexpr uint8_t led_tx            =   26;    // no   PA27/LED2 (LED_TX)
+constexpr uint8_t foff_pin          =   21;    // D21  PA23
 
 // Not used
-//    6    // D6   PA20
-//    7    // D7   PA21
-//   15    // A1   PB08
-//   16    // A2   PB09
-//   19    // A5   PB02
+//    6    // D6   PA20       // d21
+//    7    // D7   PA21       // d21
+//   15    // A1   PB08       // d21
+//   16    // A2   PB09       // d21
+//   19    // A5   PB02       // d21
 //   20    // D20  PA22/SDA
 //   21    // D21  PA23/SCL
 

@@ -9,6 +9,8 @@
 
 
 void doCommand();
+void doState1();
+void doState2();
 
 
 #endif  //!_COMMANDS_H_

@@ -33,6 +33,9 @@ extern int16_t reserve;
 extern int16_t celsiusHex;
 //extern float celsius;
 
+extern uint8_t state1;
+extern uint8_t state2;
+
 // comm 51 параметры измерения
 extern uint8_t  prbReference[];     // опорное напряжение
 extern uint8_t  prbGain[];          // усиление
@@ -69,8 +72,8 @@ void doReadProbes()
     txDat[6]  =   adcReserve & 0xFF;       // Lo
     txDat[7]  = ( adcCelsius >> 8) & 0xFF; // Hi
     txDat[8]  =   adcCelsius & 0xFF;       // Lo
-    txDat[9]  =   0x77;      // mcr1 - информация о состоянии 
-    txDat[10] =   0x88;      // mcr2 - ... или управление 
+    txDat[9]  =   state1;      // информация о состоянии 
+    txDat[10] =   state2;      // информация о состоянии 
 
     txNbt = 11;
     txReplay( txNbt, 0 );   //txDat[0] ); // в нулевом - сообщение об ошибках, если не иное
@@ -205,7 +208,7 @@ void doOffsetGainCompensation()
 }
 
 
-// Чтение данных в физических величинах ( милливольты, миллиамперы, миллиградусы )
+// 0x54 Чтение данных в физических величинах ( милливольты, миллиамперы, миллиградусы )
 void doReadValues()
 {
   if( rxNbt == 0 )
@@ -218,8 +221,8 @@ void doReadValues()
     txDat[5] =   reserve & 0xFF;       // Lo
     txDat[6] = ( celsiusHex >> 8) & 0xFF; // Hi
     txDat[7] =   celsiusHex & 0xFF;       // Lo
-    txDat[8] =   0x77;      // mcr1
-    txDat[9] =   0x88;      // mcr2
+    txDat[8] =   state1;      // 
+    txDat[9] =   state2;      // 
 
     txNbt = 10;
     txReplay( txNbt, txDat[0] );
@@ -280,7 +283,7 @@ void doAdcShunt()
     adcDivider  [prb] = rxDat[4]; // Делитель: 0x00(2^0), 0x01(2^1), 0x02(2^2), 0x03(2^3), [0x04(2^4)]... 0x07
     refComp    = 0x01 & rxDat[5]; // 0/1: выкл/вкл смещение АЦП
     prbOffset   [prb] = get16(6); // Приборное смещение: 0x8000 ... 0x7fff
-    prbDivider  [prb] = get16(8); // Коэффициент преобразования в миллиамперы: Ki*0x0100 [0x12ba]
+    prbDivider  [prb] = get16(8); // Коэффициент преобразования в миллиамперы: Ki*0x0100 [0x6400]
       // Считать результат
                                           // Нулевой байт - ошибки
     txDat[1] = ( adcCurrent >> 8) & 0xFF; // Hi

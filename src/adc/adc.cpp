@@ -35,12 +35,12 @@ int16_t celsiusHex  = 0x09c4;     // +25.00
 uint8_t  prbReference[] = { 0x00, 0x00, 0x01, 0x00 };             // 02 - VCC1  01 - VCC0;
 uint8_t  prbGain[]      = { 0x00, 0x02, 0x00, 0x00 };             // 05 - DIV2  00 - X1 ;
 int16_t  prbOffset[]    = { 0x0000, 0x0000, 0x0000, 0x0000 };     // Приборные смещения
-uint16_t prbDivider[]   = { u_divider, 0x0100, 0x0000, 0x0000 };  // Коэффициенты преобразования
+uint16_t prbDivider[]   = { u_divider, 0x03ad, 0x0000, 0x0000 };  // Коэффициенты преобразования
 
 // comm 52
 uint8_t adcBits   [] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
 uint8_t adcSamples[] = { 0x03, 0x03, 0x00, 0x03 };  // 0x00 ... 0x0a (1, 2, 4, 8 ... 1024)
-uint8_t adcDivider[] = { 0x04, 0x04, 0x00, 0x04 };  // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
+uint8_t adcDivider[] = { 0x04, 0x00, 0x00, 0x04 };  // 0x00 ... 0x07 (2^0, 2^1, 2^2 ... 2^7)
 uint8_t adcRefComp[] = { 0x01, 0x01, 0x00, 0x00 };  // 0x00, 0x01  - Резервная позиция
 // adcRefComp = 0/1 отключить/включить коррекцию смещения и усиления,
 // результат АЦП будет автоматически откорректирован по формуле
@@ -118,8 +118,6 @@ void doMeasure()
   {
   case 0:
     initAdc(prb);               // настройка усиления и опоры
-      //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
-
     adcVoltage = analogDifferentialRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
     //voltage = adcVoltage * 3.3 / 2048.0;
     //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
@@ -134,11 +132,11 @@ void doMeasure()
 
   case 1:
     initAdc(prb);
-      //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
-
     adcCurrent = analogDifferentialRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
     //current = adcCurrent * 3.3 / 2048.0;
-    current = convertToValue(adcCurrent, true);
+    //current = convertToValue(adcCurrent, true);
+    current = (convMv( adcCurrent, prb ) * prbDivider  [prb] ) / 0x100 ;
+
     
     #ifdef DEBUG_ADC
       SerialUSB.print("I= "); SerialUSB.println(current, 2);

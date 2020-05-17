@@ -48,6 +48,8 @@ void loop()
       //SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX); // !! очистит буфер !!
     #endif
   }
+  doState1();
+  doState2();
   doCommand();                  // Если ненулевая, будет исполнена
   //delay(10);
 }
