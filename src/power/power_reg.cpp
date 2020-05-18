@@ -155,14 +155,66 @@ void converterOff(bool on)
 {
   digitalWrite( MPins::off_pin, !on );
 
-}    
+}
 
-  // Включение/отключение заряда (ch_pin = 5;  D5   PA15)
+  // 0x62 Задать напряжение в МВ и включить
+void doSetVoltage()
+{
+  if( rxNbt == 4 )
+  {
+    uint16_t voltage62 = get16(0); // Напряжение в милливольтах
+    uint16_t factor62  = get16(2); // Коэффициент преобразования для ADC
+    uint16_t dac = voltage62 / factor62; 
+    // dac analogWrite
+
+    _switchStatus     = true;  // коммутатор      ( foff_pin = 21 D21 PA23 ) включить
+    _converterStatus  = true;  // преобразователь ( off_pin  = 2  D4  PA14 ) включить
+
+    // reply
+    txDat[1]  = ( dac >> 8) & 0xFF; // Hi
+    txDat[2]  =   dac & 0xFF;       // Lo
+    txNbt = 3;
+    txReplay( txNbt, 0 ); 
+  }
+  else
+  {
+    txReplay(1, err_tx);                // ошибка протокола
+  }
+}
+
+
+  // 0x63 задать ток в мА и включить
+void doSetCurrent()
+{
+  if( rxNbt == 4 )
+  {
+    uint16_t current63 = get16(0); // Ток в миллиамперах
+    uint16_t factor63  = get16(2); // Коэффициент преобразования для ADC
+    uint16_t dac = current63 / factor63; 
+    // dac analogWrite
+
+    _switchStatus     = true;  // коммутатор      ( foff_pin = 21 D21 PA23 ) включить
+    _converterStatus  = true;  // преобразователь ( off_pin  = 2  D4  PA14 ) включить
+
+    // reply
+    txDat[1]  = ( dac >> 8) & 0xFF; // Hi
+    txDat[2]  =   dac & 0xFF;       // Lo
+    txNbt = 3;
+    txReplay( txNbt, 0 ); 
+  }
+  else
+  {
+    txReplay(1, err_tx);                // ошибка протокола
+  }
+}
+
+  //  Включение/отключение заряда (ch_pin = 5;  D5   PA15)
 void chargerCh(bool on)
 {
   digitalWrite( MPins::ch_pin, !on );
 
 }   
+
 
 void doSwitchFoff()
 {
@@ -192,7 +244,7 @@ void doConverterOff()
   }   
 }
 
-void doChargerCh()           // 0x62 ch_pin = 5  D5  PA15  on/off
+void doChargerCh()           // 0x64 ch_pin = 5  D5  PA15  on/off
 {
   if( rxNbt == 1 )
   {
@@ -204,6 +256,11 @@ void doChargerCh()           // 0x62 ch_pin = 5  D5  PA15  on/off
   {
     txReplay(1, err_tx);                // ошибка протокола
   }   
+}
+
+void doSetDiscurrent()       // 0x65 задать ток и включить
+{
+
 }
 
 // =====    =====

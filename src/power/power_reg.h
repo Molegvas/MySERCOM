@@ -24,6 +24,10 @@ void chargerCh(bool);         // Переключение напряжения �
   // Управление дискретными выходами
 void doSwitchFoff();          // 0x60
 void doConverterOff();        // 0x61
-void doChargerCh();           // 0x62 ch_pin = 5  D5  PA15  on/off
+void doSetVoltage();          // 0x62 задать напряжение и включить
+void doSetCurrent();          // 0x63 задать ток и включить
+void doChargerCh();           // 0x64 ch_pin = 5  D5  PA15  on/off
+void doSetDiscurrent();       // 0x65 задать ток и включить
+
 
 #endif  //!_POWER_REG_H_

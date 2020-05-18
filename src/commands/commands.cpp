@@ -16,7 +16,7 @@
 static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 
   // state1
-bool _switchStatus          = true;  // коммутатор ( foff_pin 21 D21 PA23 )
+bool _switchStatus          = false;  // коммутатор ( foff_pin 21 D21 PA23 )
 bool _converterStatus       = false;  // преобразователь
 bool _currentControlStatus  = false;  // регулирование по току
 bool _voltageControlStatus  = false;  // регулирование по напряжению
@@ -61,7 +61,10 @@ static constexpr uint8_t cmd_offset_gain_compensation = 0x59;
         // Команды управления процессами
 static constexpr uint8_t cmd_switch_foff              = 0x60; // foff_pin = 21  D21 PA23
 static constexpr uint8_t cmd_converter_off            = 0x61; // off_pin  =  2  D4  PA14
-static constexpr uint8_t cmd_charger_ch               = 0x62; // ch_pin   =  5  D5  PA15
+static constexpr uint8_t cmd_set_voltage              = 0x62; // 
+static constexpr uint8_t cmd_set_current              = 0x63; // 
+static constexpr uint8_t cmd_charger_ch               = 0x64; // ch_pin   =  5  D5  PA15
+static constexpr uint8_t cmd_set_discurrent           = 0x65; // 
 
 
 
@@ -113,7 +116,10 @@ void doCommand()
         // Команды управления процессами
       case cmd_switch_foff:               doSwitchFoff();             break;  // 0x60
       case cmd_converter_off:             doConverterOff();           break;  // 0x61
-      case cmd_charger_ch:                doChargerCh();              break;  // 0x62 
+      case cmd_set_voltage:             doSetVoltage();           break;  // 0x62
+      case cmd_set_current:             doSetCurrent();           break;  // 0x63
+      case cmd_charger_ch:                doChargerCh();              break;  // 0x64 
+      case cmd_set_discurrent:          doSetDiscurrent();              break;  // 0x65 
       
 
         // Команды работы с измерителями
