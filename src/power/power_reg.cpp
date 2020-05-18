@@ -6,9 +6,40 @@
 
 #include <Arduino.h>
 #include "board/mpins.h"
+#include "wake/wake.h"
 #include "power/power_reg.h"
+#include "commands/commands.h"
 #include <FastPID.h>
 #include "stdint.h"
+
+    // Переменные - уточнить типы  
+extern char     rxNbt;          //+ принятое количество байт в пакете
+extern char     rxDat[frame];   //+ массив принятых данных
+extern uint8_t  command;        // код команды на выполнение
+
+//extern char     TxCmd;          // команда, передаваемая в пакете
+extern char     txNbt;          // количество байт данных в пакете
+extern char     txDat[frame];   //+ массив данных для передачи
+
+  // state1
+extern bool _switchStatus;          // коммутатор ( foff_pin 21 D21 PA23 )
+extern bool _converterStatus;       // преобразователь
+// extern bool _currentControlStatus;  // регулирование по току
+// extern bool _voltageControlStatus;  // регулирование по напряжению
+// extern bool _chargeStatus;          // заряд
+// extern bool _dischargeStatus;       // разряд
+// extern bool _pauseStatus;           // пауза
+// extern bool _reserve1Status;        // резерв 1
+
+  // state2
+// extern bool _overHeatingStatus;     // перегрев
+// extern bool _overloadStatus;        // перегрузка
+// extern bool _powerLimitationStatus; // ограничение мощности
+// extern bool _reversePolarityStatus; // обратная полярность
+// extern bool _shortCircuitStatus;    // короткое замыкание
+// extern bool _calibrationStatus;     // калибровка
+// extern bool _upgradeStatus;         // обновление
+// extern bool _reserve2Status;        // резерв 2
 
 float kp =  0.1;
 float ki =  0.5;
@@ -97,4 +128,67 @@ bool configure( float kp, float ki, float kd, float hz, int bits, bool sign )
 void clear()
 {
   return myPID.clear();
+}
+
+void portsInit()
+{
+  pinMode( MPins::foff_pin, OUTPUT);
+  pinMode( MPins::off_pin,  OUTPUT);
+}
+
+
+  // Включение/отключение коммутатора (foff_pin 21  D21 PA23)
+void switchFoff(bool on)
+{
+  digitalWrite( MPins::foff_pin, on );
+  // if(_switchStatus)
+  // {
+  //   digitalWrite( MPins::foff_pin, LOW );
+  // }
+  // else
+  // {
+  //   digitalWrite( MPins::foff_pin, HIGH );
+  // }
+}
+
+  // Включение/отключение преобразователя (off_pin 2  D4 PA14)
+void converterOff(bool on)
+{
+  digitalWrite( MPins::off_pin, !on );
+  // if(!on)
+  // {
+  //   digitalWrite( MPins::off_pin, LOW );
+  // }
+  // else
+  // {
+  //   digitalWrite( MPins::off_pin, HIGH );
+  // }
+}    
+
+void doSwitchFoff()
+{
+  if( rxNbt == 1 )
+  {
+    _switchStatus = rxDat[0] & 0x01;  // 
+
+    txReplay( 1, 0 );                   // Об ошибках параметров не сообщается
+  }
+  else
+  {
+    txReplay(1, err_tx);                // ошибка протокола
+  }   
+}
+
+void doConverterOff()
+{
+  if( rxNbt == 1 )
+  {
+    _converterStatus = rxDat[0] & 0x01;  // 
+
+    txReplay( 1, 0 );                   // Об ошибках параметров не сообщается
+  }
+  else
+  {
+    txReplay(1, err_tx);                // ошибка протокола
+  }   
 }

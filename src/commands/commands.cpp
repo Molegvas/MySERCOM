@@ -7,6 +7,7 @@
 #include "adc_commands.h"
 #include "pid_commands.h"
 #include "board/mpins.h"
+#include "power/power_reg.h"
 #include "wake/wake.h"
 #include "stdint.h"
 #include <Arduino.h>
@@ -15,7 +16,7 @@
 static constexpr char Info[] = {"Q920dn Rev0.0\n\0"};   //
 
   // state1
-bool _switchStatus          = false;  // коммутатор
+bool _switchStatus          = true;  // коммутатор ( foff_pin 21 D21 PA23 )
 bool _converterStatus       = false;  // преобразователь
 bool _currentControlStatus  = false;  // регулирование по току
 bool _voltageControlStatus  = false;  // регулирование по напряжению
@@ -56,6 +57,11 @@ static constexpr uint8_t cmd_set_adc_shunt            = 0x56;
 static constexpr uint8_t cmd_set_adc_rtu              = 0x57;
 static constexpr uint8_t cmd_offset_compensation      = 0x58;
 static constexpr uint8_t cmd_offset_gain_compensation = 0x59;
+
+        // Команды управления процессами
+static constexpr uint8_t cmd_switch_foff              = 0x60; // foff_pin 21  D21 PA23
+static constexpr uint8_t cmd_converter_off            = 0x61; // off_pin   2  D4  PA14
+
 
 
     // ЦАП - настройки
@@ -103,6 +109,13 @@ void doCommand()
 
     switch( cmd )
     {
+        // Команды управления процессами
+      case cmd_switch_foff:               doSwitchFoff();             break;  // 0x60
+      case cmd_converter_off:             doConverterOff();           break;  // 0x61
+
+
+
+
         // Команды работы с измерителями
       case cmd_adc_read_probes:           doReadProbes();             break;  // 0x50
       case cmd_adc_config:                doAdcConfig();              break;  // 0x51
@@ -188,7 +201,10 @@ void doState1()
   _chargeStatus         ? state1 |= 0b00001000 : state1 &= 0b11110111; 
   _dischargeStatus      ? state1 |= 0b00000100 : state1 &= 0b11111011; 
   _pauseStatus          ? state1 |= 0b00000010 : state1 &= 0b11111101; 
-  _reserve1Status       ? state1 |= 0b00000001 : state1 &= 0b11111110; 
+  _reserve1Status       ? state1 |= 0b00000001 : state1 &= 0b11111110;
+
+  switchFoff(_switchStatus);        // Непрерывное подтверждение состояния
+  converterOff(_converterStatus);
 }
 
 // Формирование регистра состояния 2 

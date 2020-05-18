@@ -7,7 +7,7 @@
 
 #include "stdint.h"
 
-
+void portsInit();
 void initPid();
 void doPid();
 
@@ -16,5 +16,11 @@ bool setOutputConfig( int bits, bool sign );
 bool setOutputRange( int16_t min, int16_t max );
 bool configure( float kp, float ki, float kd, float hz, int bits, bool sign );
 void clear();
+
+void switchFoff(bool);        // Включение/отключение коммутатора
+void converterOff(bool);      // Включение/отключение преобразователя
+
+void doSwitchFoff();
+void doConverterOff();
 
 #endif  //!_POWER_REG_H_
