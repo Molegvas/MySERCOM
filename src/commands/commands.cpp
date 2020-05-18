@@ -59,8 +59,9 @@ static constexpr uint8_t cmd_offset_compensation      = 0x58;
 static constexpr uint8_t cmd_offset_gain_compensation = 0x59;
 
         // Команды управления процессами
-static constexpr uint8_t cmd_switch_foff              = 0x60; // foff_pin 21  D21 PA23
-static constexpr uint8_t cmd_converter_off            = 0x61; // off_pin   2  D4  PA14
+static constexpr uint8_t cmd_switch_foff              = 0x60; // foff_pin = 21  D21 PA23
+static constexpr uint8_t cmd_converter_off            = 0x61; // off_pin  =  2  D4  PA14
+static constexpr uint8_t cmd_charger_ch               = 0x62; // ch_pin   =  5  D5  PA15
 
 
 
@@ -112,9 +113,8 @@ void doCommand()
         // Команды управления процессами
       case cmd_switch_foff:               doSwitchFoff();             break;  // 0x60
       case cmd_converter_off:             doConverterOff();           break;  // 0x61
-
-
-
+      case cmd_charger_ch:                doChargerCh();              break;  // 0x62 
+      
 
         // Команды работы с измерителями
       case cmd_adc_read_probes:           doReadProbes();             break;  // 0x50
@@ -203,8 +203,10 @@ void doState1()
   _pauseStatus          ? state1 |= 0b00000010 : state1 &= 0b11111101; 
   _reserve1Status       ? state1 |= 0b00000001 : state1 &= 0b11111110;
 
-  switchFoff(_switchStatus);        // Непрерывное подтверждение состояния
+  // Непрерывное подтверждение состояния управляющих выходов
+  switchFoff(_switchStatus);
   converterOff(_converterStatus);
+  chargerCh(_chargeStatus);
 }
 
 // Формирование регистра состояния 2 

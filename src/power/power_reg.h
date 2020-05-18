@@ -19,8 +19,11 @@ void clear();
 
 void switchFoff(bool);        // Включение/отключение коммутатора
 void converterOff(bool);      // Включение/отключение преобразователя
+void chargerCh(bool);         // Переключение напряжения с выхода DAC
 
-void doSwitchFoff();
-void doConverterOff();
+  // Управление дискретными выходами
+void doSwitchFoff();          // 0x60
+void doConverterOff();        // 0x61
+void doChargerCh();           // 0x62 ch_pin = 5  D5  PA15  on/off
 
 #endif  //!_POWER_REG_H_

@@ -26,7 +26,7 @@ extern bool _switchStatus;          // коммутатор ( foff_pin 21 D21 PA
 extern bool _converterStatus;       // преобразователь
 // extern bool _currentControlStatus;  // регулирование по току
 // extern bool _voltageControlStatus;  // регулирование по напряжению
-// extern bool _chargeStatus;          // заряд
+extern bool _chargeStatus;          // заряд
 // extern bool _dischargeStatus;       // разряд
 // extern bool _pauseStatus;           // пауза
 // extern bool _reserve1Status;        // резерв 1
@@ -132,38 +132,37 @@ void clear()
 
 void portsInit()
 {
-  pinMode( MPins::foff_pin, OUTPUT);
-  pinMode( MPins::off_pin,  OUTPUT);
+  pinMode( MPins::off_pin,  OUTPUT);  // off_pin  =  2   D4   PA14
+  pinMode( MPins::ch_pin,   OUTPUT);  // ch_pin   =  5   D5   PA15
+  pinMode( MPins::foff_pin, OUTPUT);  // foff_pin = 21   D21  PA23
+  #ifdef WEMOS    // using pcb SAMD21 MINI
+    pinMode( MPins::led_rx, OUTPUT);  // led_rx   = 25   no   PB03/LED1 (LED_BUILTIN, LED_RX)
+    pinMode( MPins::led_tx, OUTPUT);  // led_tx   = 26   no   PA27/LED2 (LED_TX)
+  #endif
 }
 
+  // ===== Управление дискретными выходами =====
 
-  // Включение/отключение коммутатора (foff_pin 21  D21 PA23)
+  // Включение/отключение коммутатора (foff_pin = 21  D21 PA23)
 void switchFoff(bool on)
 {
   digitalWrite( MPins::foff_pin, on );
-  // if(_switchStatus)
-  // {
-  //   digitalWrite( MPins::foff_pin, LOW );
-  // }
-  // else
-  // {
-  //   digitalWrite( MPins::foff_pin, HIGH );
-  // }
+
 }
 
-  // Включение/отключение преобразователя (off_pin 2  D4 PA14)
+  // Включение/отключение преобразователя (off_pin = 2  D4 PA14)
 void converterOff(bool on)
 {
   digitalWrite( MPins::off_pin, !on );
-  // if(!on)
-  // {
-  //   digitalWrite( MPins::off_pin, LOW );
-  // }
-  // else
-  // {
-  //   digitalWrite( MPins::off_pin, HIGH );
-  // }
+
 }    
+
+  // Включение/отключение заряда (ch_pin = 5;  D5   PA15)
+void chargerCh(bool on)
+{
+  digitalWrite( MPins::ch_pin, !on );
+
+}   
 
 void doSwitchFoff()
 {
@@ -192,3 +191,19 @@ void doConverterOff()
     txReplay(1, err_tx);                // ошибка протокола
   }   
 }
+
+void doChargerCh()           // 0x62 ch_pin = 5  D5  PA15  on/off
+{
+  if( rxNbt == 1 )
+  {
+    _chargeStatus = rxDat[0] & 0x01;  // 
+
+    txReplay( 1, 0 );                   // Об ошибках параметров не сообщается
+  }
+  else
+  {
+    txReplay(1, err_tx);                // ошибка протокола
+  }   
+}
+
+// =====    =====
