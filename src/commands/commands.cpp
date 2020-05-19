@@ -116,8 +116,8 @@ void doCommand()
         // Команды управления процессами
       case cmd_switch_foff:               doSwitchFoff();             break;  // 0x60
       case cmd_converter_off:             doConverterOff();           break;  // 0x61
-      case cmd_set_voltage:             doSetVoltage();           break;  // 0x62
-      case cmd_set_current:             doSetCurrent();           break;  // 0x63
+      case cmd_set_voltage:               doSetVoltage();             break;  // 0x62
+      case cmd_set_current:               doSetCurrent();             break;  // 0x63
       case cmd_charger_ch:                doChargerCh();              break;  // 0x64 
       case cmd_set_discurrent:          doSetDiscurrent();              break;  // 0x65 
       

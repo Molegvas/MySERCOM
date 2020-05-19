@@ -156,69 +156,129 @@ void converterOff(bool on)
   digitalWrite( MPins::off_pin, !on );
 }
 
-  // 0x62 Задать напряжение в МВ и включить
+  // 0x62 Задать напряжение в мВ и включить
 void doSetVoltage()
 {
-  if( rxNbt == 4 )
+  if( rxNbt == 5 )
   {
     txDat[0] = 0x00;                        // Очистить сообщение об ошибках
-    uint16_t voltage62 = get16(0);          // Заданное напряжение в милливольтах
-    uint16_t factor62  = get16(2);          // Коэффициент преобразования в код ADC
+
+    _pidStatus         = rxDat[0] & 0x01;   // Регулятор отключить или включить
+    uint16_t voltage62 = get16(1);          // Заданное напряжение в милливольтах
+    uint16_t factor62  = get16(3);          // Коэффициент преобразования в код ADC
     uint16_t value = voltage62 / factor62;
+
     if(value >= 0x0400)                     // Если за пределом
     {
       value = 0x3ff;                        // Задать максимум
       txDat[0] = 0x01;                      // и сообщить об ошибке
     } 
-    _pidStatus = false;                     // Регулятор отключить чтобы не мешал
-    dacWrite10bit( value );                 // Задать код
-    _switchStatus     = true;               // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
-    _converterStatus  = true;               // преобразователь включить ( off_pin =  2 D4  PA14 )
+
+    // Задать условия, установить напряжение 
+    _chargeStatus    = true;                // заряд, иное невозможно
+    _switchStatus    = true;                // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
+    _converterStatus = true;                // преобразователь включить ( off_pin =  2 D4  PA14 )
+
+    if(_pidStatus)
+    {
+      setpoint = value;
+    }
+    else
+    {
+      dacWrite10bit( value );                 // Задать код
+    }
 
     // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC
-    txDat[1]  = ( value >> 8) & 0xFF; // Hi
-    txDat[2]  =   value & 0xFF;       // Lo
+    txDat[1] = ( value >> 8) & 0xFF;        // Hi
+    txDat[2] =   value & 0xFF;              // Lo
     txNbt = 3;
     txReplay( txNbt, txDat[0] ); 
   }
   else
   {
-    txReplay(1, err_tx);                // ошибка протокола
+    txReplay(1, err_tx);                    // ошибка протокола
   }
 }
-
 
   // 0x63 задать ток в мА и включить
 void doSetCurrent()
 {
   if( rxNbt == 4 )
   {
-    uint16_t current63 = get16(0); // Ток в миллиамперах
-    uint16_t factor63  = get16(2); // Коэффициент преобразования для ADC
-    uint16_t value = current63 / factor63; 
-    // dac analogWrite
-    //dacWrite( MPins::dac_pin, value ); //( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
-    dacWrite10bit( value ); //( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
-    _switchStatus     = true;  // коммутатор      ( foff_pin = 21 D21 PA23 ) включить
-    _converterStatus  = true;  // преобразователь ( off_pin  = 2  D4  PA14 ) включить
+    txDat[0] = 0x00;                        // Очистить сообщение об ошибках
+    uint16_t current63 = get16(0);          // Заданный ток в миллиамперах
+    uint16_t factor63  = get16(2);          // Коэффициент преобразования в код ADC
+    uint16_t value = current63 / factor63;
 
-    // reply
-    txDat[1]  = ( value >> 8) & 0xFF; // Hi
-    txDat[2]  =   value & 0xFF;       // Lo
+    if(value >= 0x0400)                     // Если за пределом
+    {
+      value = 0x3ff;                        // Задать максимум
+      txDat[0] = 0x01;                      // и сообщить об ошибке
+    }
+
+    // Задать условия, установить ток (нагрузка должна быть на клеммах) 
+    _chargeStatus    = true;                // заряд, иное невозможно
+    _pidStatus       = false;               // Регулятор отключить чтобы не мешал
+    _switchStatus    = true;                // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
+    _converterStatus = true;                // преобразователь включить ( off_pin =  2 D4  PA14 )
+    dacWrite10bit( value );                 // Задать код
+
+    // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC
+    txDat[1]  = ( value >> 8) & 0xFF;       // Hi
+    txDat[2]  =   value & 0xFF;             // Lo
     txNbt = 3;
-    txReplay( txNbt, 0 ); 
+    txReplay( txNbt, txDat[0] ); 
   }
   else
   {
-    txReplay(1, err_tx);                // ошибка протокола
+    txReplay(1, err_tx);                    // ошибка протокола
   }
 }
+
+  // 0x65 задать ток разряда в мА и включить
+void doSetDiscurrent()
+{
+  if( rxNbt == 4 )
+  {
+    txDat[0] = 0x00;                        // Очистить сообщение об ошибках
+    uint16_t current65 = get16(0);          // Заданный ток в миллиамперах
+    uint16_t factor65  = get16(2);          // Коэффициент преобразования в код ADC
+    uint16_t value = current65 / factor65;
+
+    if(value >= 0x0400)                     // Если за пределом
+    {
+      value = 0x3ff;                        // Задать максимум
+      txDat[0] = 0x01;                      // и сообщить об ошибке
+    }
+
+    // Задать условия и установить ток ( на клеммах должна быть заряженная батарея ) 
+    _chargeStatus    = false;               // это разряд, иное невозможно
+    _pidStatus       = false;               // Регулятор отключить чтобы не мешал
+    _switchStatus    = true;                // коммутатор включить      ( foff_pin = 21 D21 PA23 ) 
+    _converterStatus = false;               // преобразователь выключить ( off_pin =  2 D4  PA14 )
+    dacWrite10bit( value );                 // Задать код
+
+    // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC
+    txDat[1]  = ( value >> 8) & 0xFF;       // Hi
+    txDat[2]  =   value & 0xFF;             // Lo
+    txNbt = 3;
+    txReplay( txNbt, txDat[0] ); 
+  }
+  else
+  {
+    txReplay(1, err_tx);                    // ошибка протокола
+  }
+}
+
+  // 0x66 задать поддержание напряжения пид-регулятором
+
+
+
 
   //  Включение/отключение заряда (ch_pin = 5;  D5   PA15)
 void chargerCh(bool on)
 {
   digitalWrite( MPins::ch_pin, !on );
-
 }   
 
 
@@ -264,9 +324,6 @@ void doChargerCh()           // 0x64 ch_pin = 5  D5  PA15  on/off
   }   
 }
 
-void doSetDiscurrent()       // 0x65 задать ток и включить
-{
 
-}
 
 // =====    =====
