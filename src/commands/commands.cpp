@@ -23,7 +23,7 @@ bool _voltageControlStatus  = false;  // регулирование по нап�
 bool _chargeStatus          = false;  // заряд
 bool _dischargeStatus       = false;  // разряд
 bool _pauseStatus           = false;  // пауза
-bool _reserve1Status        = false;  // резерв 1
+bool _pidStatus             = false;  // управление регулятором
 
   // state2
 bool _overHeatingStatus     = false;  // перегрев
@@ -207,7 +207,7 @@ void doState1()
   _chargeStatus         ? state1 |= 0b00001000 : state1 &= 0b11110111; 
   _dischargeStatus      ? state1 |= 0b00000100 : state1 &= 0b11111011; 
   _pauseStatus          ? state1 |= 0b00000010 : state1 &= 0b11111101; 
-  _reserve1Status       ? state1 |= 0b00000001 : state1 &= 0b11111110;
+  _pidStatus            ? state1 |= 0b00000001 : state1 &= 0b11111110;
 
   // Непрерывное подтверждение состояния управляющих выходов
   switchFoff(_switchStatus);

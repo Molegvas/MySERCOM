@@ -27,7 +27,7 @@ extern bool  output_signed;
 //uint16_t adcVoltage = 0x0123;  // extern
 //uint16_t adcCurrent = 0x8081;  // extern
 
-extern bool     pidStatus;
+extern bool     _pidStatus;
 extern uint8_t  pidMode;
 extern uint16_t setpoint;
 
@@ -60,13 +60,13 @@ void doPidTest()
     
     if( err )
     {
-      pidStatus = false;            // отключен
+      _pidStatus = false;            // отключен
       pidMode   = 0;                // не выбран
       setpoint  = 0x00;             // не задано
     }
     else
     {
-      pidStatus = false;            // PID-регулятор отключен
+      _pidStatus = false;            // PID-регулятор отключен
       pidMode   = _pidMode;         // выбор канала регулирования
       setpoint  = _setpoint;        // установка выхода
     }

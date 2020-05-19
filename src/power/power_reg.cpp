@@ -29,7 +29,7 @@ extern bool _converterStatus;       // преобразователь
 extern bool _chargeStatus;          // заряд
 // extern bool _dischargeStatus;       // разряд
 // extern bool _pauseStatus;           // пауза
-// extern bool _reserve1Status;        // резерв 1
+extern bool _pidStatus;             // управление регулятором
 
   // state2
 // extern bool _overHeatingStatus;     // перегрев
@@ -49,7 +49,7 @@ int output_bits = 10; // Set analog out resolution to max, 10-bits
 bool output_signed = false; 
 
 uint16_t output     = 0x0000;
-bool     pidStatus  = false;    // false - PID-регулятор отключен 
+//bool     pidStatus  = false;    // false - PID-регулятор отключен 
 uint8_t  pidMode    = 0;        // 0-1-2 - тестирование: задать напряжение, ток заряда или ток разряда
 // pidReference
 
@@ -65,7 +65,7 @@ void initPid()
 
 void doPid()
 {
-  if( pidStatus )
+  if( _pidStatus )
   {
     uint32_t before;
     uint32_t after; 
@@ -74,7 +74,7 @@ void doPid()
     output = myPID.step(setpoint, feedback); 
     after = micros();
  
-    analogWrite( MPins::dac_pin, output );
+    //analogWrite( MPins::dac_pin, output );
 
     #ifdef DEBUG_PID
     // SerialUSB.print("runtime: "); 
@@ -89,16 +89,16 @@ void doPid()
   }
   else
   {
-    // output in millivolts
-output = 250;         // Test
-    //analogReference(AR_DEFAULT);
-    //DAC->CTRLB.reg = 0x40;  // ???use AVCC as the reference - DAC Off
-    analogWrite( MPins::dac_pin, ( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
-                // найти откуда /4 ?
-    #ifdef DEBUG_PID
-      SerialUSB.print(" out: "); 
-      SerialUSB.println(output); 
-    #endif
+//     // output in millivolts
+// output = 250;         // Test
+//     //analogReference(AR_DEFAULT);
+//     //DAC->CTRLB.reg = 0x40;  // ???use AVCC as the reference - DAC Off
+//     //analogWrite( MPins::dac_pin, ( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
+//                 // найти откуда /4 ?
+//     #ifdef DEBUG_PID
+//       SerialUSB.print(" out: "); 
+//       SerialUSB.println(output); 
+//     #endif
   }
   
 
@@ -139,6 +139,7 @@ void portsInit()
     pinMode( MPins::led_rx, OUTPUT);  // led_rx   = 25   no   PB03/LED1 (LED_BUILTIN, LED_RX)
     pinMode( MPins::led_tx, OUTPUT);  // led_tx   = 26   no   PA27/LED2 (LED_TX)
   #endif
+  dacInit();                          // Set reference
 }
 
   // ===== Управление дискретными выходами =====
@@ -147,14 +148,12 @@ void portsInit()
 void switchFoff(bool on)
 {
   digitalWrite( MPins::foff_pin, on );
-
 }
 
   // Включение/отключение преобразователя (off_pin = 2  D4 PA14)
 void converterOff(bool on)
 {
   digitalWrite( MPins::off_pin, !on );
-
 }
 
   // 0x62 Задать напряжение в МВ и включить
@@ -162,19 +161,25 @@ void doSetVoltage()
 {
   if( rxNbt == 4 )
   {
-    uint16_t voltage62 = get16(0); // Напряжение в милливольтах
-    uint16_t factor62  = get16(2); // Коэффициент преобразования для ADC
-    uint16_t dac = voltage62 / factor62; 
-    // dac analogWrite
+    txDat[0] = 0x00;                        // Очистить сообщение об ошибках
+    uint16_t voltage62 = get16(0);          // Заданное напряжение в милливольтах
+    uint16_t factor62  = get16(2);          // Коэффициент преобразования в код ADC
+    uint16_t value = voltage62 / factor62;
+    if(value >= 0x0400)                     // Если за пределом
+    {
+      value = 0x3ff;                        // Задать максимум
+      txDat[0] = 0x01;                      // и сообщить об ошибке
+    } 
+    _pidStatus = false;                     // Регулятор отключить чтобы не мешал
+    dacWrite10bit( value );                 // Задать код
+    _switchStatus     = true;               // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
+    _converterStatus  = true;               // преобразователь включить ( off_pin =  2 D4  PA14 )
 
-    _switchStatus     = true;  // коммутатор      ( foff_pin = 21 D21 PA23 ) включить
-    _converterStatus  = true;  // преобразователь ( off_pin  = 2  D4  PA14 ) включить
-
-    // reply
-    txDat[1]  = ( dac >> 8) & 0xFF; // Hi
-    txDat[2]  =   dac & 0xFF;       // Lo
+    // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC
+    txDat[1]  = ( value >> 8) & 0xFF; // Hi
+    txDat[2]  =   value & 0xFF;       // Lo
     txNbt = 3;
-    txReplay( txNbt, 0 ); 
+    txReplay( txNbt, txDat[0] ); 
   }
   else
   {
@@ -190,15 +195,16 @@ void doSetCurrent()
   {
     uint16_t current63 = get16(0); // Ток в миллиамперах
     uint16_t factor63  = get16(2); // Коэффициент преобразования для ADC
-    uint16_t dac = current63 / factor63; 
+    uint16_t value = current63 / factor63; 
     // dac analogWrite
-
+    //dacWrite( MPins::dac_pin, value ); //( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
+    dacWrite10bit( value ); //( output * 0x3ff /4  ) / 3300 ); //1200 = AREF
     _switchStatus     = true;  // коммутатор      ( foff_pin = 21 D21 PA23 ) включить
     _converterStatus  = true;  // преобразователь ( off_pin  = 2  D4  PA14 ) включить
 
     // reply
-    txDat[1]  = ( dac >> 8) & 0xFF; // Hi
-    txDat[2]  =   dac & 0xFF;       // Lo
+    txDat[1]  = ( value >> 8) & 0xFF; // Hi
+    txDat[2]  =   value & 0xFF;       // Lo
     txNbt = 3;
     txReplay( txNbt, 0 ); 
   }
