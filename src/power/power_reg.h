@@ -8,6 +8,7 @@
 #include "stdint.h"
 
 void portsInit();
+//void initHz(float hz);
 void initPid();
 void doPid();
 

@@ -1,11 +1,20 @@
 /*
-
-
+  Реализован циклический автомат опроса датчиков. Период опроса задается параметром hz 
+  в настройках пид-регулятора. По умолчанию hz = 10.0 Hz, что соответствует 0,1с.
+  Датчиков в системе 4:
+  * измеритель напряжения - дифференциальный;
+  * измеритель тока - дифференциальный;
+  * пид-регулятор (притворился датчиком);
+  * датчик температуры.
+  Параметры датчиков - разрядность, опорное напряжение, усиление, накопление и делитель для
+  автоматического вычисления среднего, задаются соответствующими командами, как и приборные 
+  смещение и фактор пересчета в физические величины.
 */
 
 #include <Arduino.h>
 #include "atsamd21_adc.h"
 #include "adc/adc.h"
+#include "power/power_reg.h"
 #include "board/mpins.h"
 
 /*
@@ -14,16 +23,23 @@ enum references { INTREF  = 0x00, INTVCC0,INTVCC1, AREFA, AREFB };
 // Internal Bandgap Reference, 1/1.48 VDDANA, 1/2 VDDANA, External Reference A, External Reference B
 */
 
-// Данные аппаратной поддержки
+constexpr uint8_t numDat = 4;   // Количество аналоговых датчиков в системе 
+
+  // Тайминг опроса датчиков
+extern float hz;                // 10Hz по умолчанию
+uint32_t period = 25;           // 25ms for 10Hz Период опроса датчика 25*4=100мс (10Гц)
+uint32_t ts;                    // таймер
+
+  // Данные аппаратной поддержки
 constexpr uint16_t u_divider = (uint16_t)((39000 + 2200) * 0x100 / 2200); 
 
-// Данные АЦП
+  // Данные АЦП
 uint16_t adcVoltage = 0x0000;
 uint16_t adcCurrent = 0x0000;
 uint16_t adcReserve = 0x0000;
 uint16_t adcCelsius = 0x0000;
 
-// Пересчитанные в физические величины - mV, mA, mC
+  // Пересчитанные в физические величины - mV, mA, mC
 int16_t voltage     = 0x0064;     //  0.10V
 int16_t current     = 0xfc17;     // -1.00A
 int16_t reserve     = 0x0000;
@@ -92,76 +108,84 @@ int16_t convMv(uint16_t adc, uint8_t prb)
 }
 
 
-int16_t convertToValue(uint16_t adc, bool diff)
-{
-  uint16_t maxVal = 4096;
-  uint16_t ref = 3300;
+// int16_t convertToValue(uint16_t adc, bool diff)
+// {
+//   uint16_t maxVal = 4096;
+//   uint16_t ref = 3300;
 
-  if(diff) maxVal /= 2;               // Не поддерживается ардуиной дифф. режим
+//   if(diff) maxVal /= 2;               // Не поддерживается ардуиной дифф. режим
 
-  //SerialUSB.print("->"); SerialUSB.println(adc, HEX);
-
-
-  return adc * ref / maxVal;
-}
+//   //SerialUSB.print("->"); SerialUSB.println(adc, HEX);
 
 
-// автомат последовательного опроса датчиков
+//   return adc * ref / maxVal;
+// }
+
+
+// Циклический автомат последовательного опроса датчиков
 void doMeasure()
 {
-  static int prb = 0;
+  period = (uint32_t)( (1000.0 / hz) / numDat );    // Может быть изменен в процессе?
 
-  prb++;
-  if( prb >= 4 ) { prb = 0; } 
+  if( millis() - ts >= period )
+  { 
+    ts += period; 
+    static int prb = 0;
 
-  switch (prb)
-  {
-  case 0:
-    initAdc(prb);               // настройка усиления и опоры
-    adcVoltage = analogDifferentialRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
-    //voltage = adcVoltage * 3.3 / 2048.0;
-    //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
-    //voltage = convertToValue(adcVoltage, true);
-  //voltage = adcVoltage;   //averaging(adcVoltage, prb);
-  voltage = (convMv( adcVoltage, prb ) * prbDivider  [prb]) / 0x100 - prbOffset[prb];
+    prb++;
+    if( prb >= numDat ) { prb = 0; } 
 
-    #ifdef DEBUG_ADC
-      SerialUSB.print("V= "); SerialUSB.println(voltage, 2);
-    #endif
-    break;
+    switch (prb)
+    {
+    case 0:
+      initAdc(prb);               // настройка усиления и опоры
+      adcVoltage = analogDifferentialRaw( MPins::bat_plus_mux, MPins::bat_minus_mux );    // 4, 5
+      //voltage = adcVoltage * 3.3 / 2048.0;
+      //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
+      //voltage = convertToValue(adcVoltage, true);
+    //voltage = adcVoltage;   //averaging(adcVoltage, prb);
+    voltage = (convMv( adcVoltage, prb ) * prbDivider  [prb]) / 0x100 - prbOffset[prb];
 
-  case 1:
-    initAdc(prb);
-    adcCurrent = analogDifferentialRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
-    //current = adcCurrent * 3.3 / 2048.0;
-    //current = convertToValue(adcCurrent, true);
-    current = (convMv( adcCurrent, prb ) * prbDivider  [prb] ) / 0x100 ;
+      #ifdef DEBUG_ADC
+        //SerialUSB.print("V= "); SerialUSB.println(voltage, 2);
+        SerialUSB.print("V= "); SerialUSB.println(adcVoltage, HEX);
+      #endif
+      break;
 
-    
-    #ifdef DEBUG_ADC
-      SerialUSB.print("I= "); SerialUSB.println(current, 2);
-    #endif
-    break;
+    case 1:
+      initAdc(prb);
+      adcCurrent = analogDifferentialRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
+      //current = adcCurrent * 3.3 / 2048.0;
+      //current = convertToValue(adcCurrent, true);
+      current = (convMv( adcCurrent, prb ) * prbDivider  [prb] ) / 0x100 ;
 
-  case 2:
-  //SerialUSB.println(u_divider, HEX);
+      
+      #ifdef DEBUG_ADC
+        SerialUSB.print("I= "); SerialUSB.println(current, 2);
+      #endif
+      break;
 
-    break;
+    case 2:
+      doPid();      // исполнять, если задано
 
-  case 3:
-    initAdc(prb);
-    //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
+        //SerialUSB.println(millis()); 
+      break;
 
-    adcCelsius = analogRead( MPins::rtu_pin );  // Код АЦП (Может быть сдвинут при накоплении)
-    celsius = readSteinhart( adcCelsius );      // float 
-    celsiusHex = (int16_t)( celsius * 100.0 );  // Преобразование для передачи в int16_t
-    #ifdef DEBUG_ADC
-      SerialUSB.print("T= "); SerialUSB.println(celsius, 2);
-    #endif
-    break;
- 
-  default:
-    break;
+    case 3:
+      initAdc(prb);
+      //analogReadConfig( adcBits[prb], adcSamples[prb], adcDivider[prb] ); //настройка АЦП
+
+      adcCelsius = analogRead( MPins::rtu_pin );  // Код АЦП (Может быть сдвинут при накоплении)
+      celsius = readSteinhart( adcCelsius );      // float 
+      celsiusHex = (int16_t)( celsius * 100.0 );  // Преобразование для передачи в int16_t
+      #ifdef DEBUG_ADC
+        SerialUSB.print("T= "); SerialUSB.println(celsius, 2);
+      #endif
+      break;
+  
+    default:
+      break;
+    }
   }
 }
 
@@ -172,13 +196,13 @@ float readSteinhart( const int adc )
   float tr = 4095.0 / adc - 1.0;
   
   tr = (float)refRes / tr;
-  steinhart = tr / (float)nomRes;                  // (R/Ro)
+  steinhart = tr / (float)nomRes;                       // (R/Ro)
   steinhart = log(steinhart);                           // ln(R/Ro)
   steinhart /= b_value;                                 // 1/B * ln(R/Ro)
   steinhart += 1.0f / (nominal_temperature + 273.15f);  // + (1/To)
   steinhart = 1.0f / steinhart;                         // Invert
   steinhart -= 273.15f;
-  if ( steinhart == -273.15f ) steinhart = 120.0f;    // При отсутствии датчика
+  if ( steinhart == -273.15f ) steinhart = 120.0f;      // При отсутствии датчика
   return ( steinhart > 120.0f ) ? 120.0f : steinhart;
 }
 

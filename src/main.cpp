@@ -5,6 +5,8 @@
     Using ATSAMD21 SERCOM for more SPI, I2C and Serial ports
 
     View detail for Atmel AT11628: SAM D21 SERCOM I2C Configuration
+
+    Вариант с UART
 */
 
 #include "board/mpins.h"
@@ -15,8 +17,6 @@
 
 #include <Arduino.h>            // N. порядок не нарушать!
 #include "wiring_private.h"     // N=1.
-
-
 
 
 void setup() 
@@ -30,27 +30,21 @@ void setup()
   portsInit();
   wakeInit( 0x00, 500 );            // обмен без адреса, время ожидания, ms
   initAdc(0);                       // не обязательно
-
+  
 }
 
 void loop() 
 {
-  if( 1)      // пока так
-  {   // Измерение готово
-    doMeasure();   // считать, преобразовать, задать следующее и запустить
-    delay(10);
-    doPid();      // исполнять, если задано
-  }
+    // Измерения и регулирование
+  doMeasure();   // считать, преобразовать, задать следующее и запустить
   
+    // Обслуживание интерфейса
   if( Serial1.available() )     // В буфере приема есть принятые байты, не факт, что пакет полный
   {
     wakeRead();                 // Пока не принят весь пакет, время ожидания ограничено (пока 1с)
-    #ifdef DEBUG_COMMANDS
-      //SerialUSB.print(" -> 0x"); SerialUSB.print(Serial1.read(), HEX); // !! очистит буфер !!
-    #endif
   }
+
   doState1();
   doState2();
   doCommand();                  // Если ненулевая, будет исполнена
-  //delay(10);
 }

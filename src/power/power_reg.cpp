@@ -47,44 +47,46 @@ float kd =  0.0;
 float hz = 10.0; 
 int output_bits = 10; // Set analog out resolution to max, 10-bits
 bool output_signed = false; 
+//extern uint32_t period;       // Период для автомата измерений, пид под номером 2, всего 4
 
 uint16_t output     = 0x0000;
-//bool     pidStatus  = false;    // false - PID-регулятор отключен 
 uint8_t  pidMode    = 0;        // 0-1-2 - тестирование: задать напряжение, ток заряда или ток разряда
 // pidReference
 
 FastPID myPID( kp, ki, kd, hz, output_bits, output_signed );
 
 uint16_t setpoint = 512;
-uint16_t feedback = 511;
+uint16_t feedback = 0x0100;
 
 void initPid()
 {
   analogWriteResolution( output_bits );
 }
 
+// void initHz(float hz)
+// {
+//   period = (uint32_t)( (1000 / hz) / 4 );
+// }
+
 void doPid()
 {
   if( _pidStatus )
   {
-    uint32_t before;
-    uint32_t after; 
-    before = micros(); 
-    //uint16_t output = myPID.step(setpoint, feedback); 
-    output = myPID.step(setpoint, feedback); 
-    after = micros();
- 
-    //analogWrite( MPins::dac_pin, output );
+    #ifdef DEBUG_PID
+      //uint32_t before;
+      //uint32_t after; 
+      uint32_t before = micros();
+    #endif
+
+    output = myPID.step(setpoint, feedback);
+    dacWrite10bit( output & 0x3ff );                 // Задать код
 
     #ifdef DEBUG_PID
-    // SerialUSB.print("runtime: "); 
-    // SerialUSB.print(after - before); 
-    // SerialUSB.print(" sp: "); 
-    // SerialUSB.print(setpoint); 
-    // SerialUSB.print(" fb: "); 
-    // SerialUSB.print(feedback); 
-    // SerialUSB.print(" out: "); 
-    // SerialUSB.println(output); 
+      uint32_t after = micros();
+      SerialUSB.print("runtime: "); SerialUSB.print(after - before); 
+      SerialUSB.print(" sp: ");     SerialUSB.print(setpoint);     
+      SerialUSB.print(" fb: ");     SerialUSB.print(feedback);
+      SerialUSB.print(" out: ");    SerialUSB.println(output); 
     #endif
   }
   else
@@ -182,6 +184,7 @@ void doSetVoltage()
     if(_pidStatus)
     {
       setpoint = value;
+      // запустить
     }
     else
     {
