@@ -8,8 +8,8 @@
 #include "stdint.h"
 
 void doPidTest();
-void doPidCoefficients();
-void doPidOutputConfig();
+//void doPidCoefficients();
+//void doPidOutputConfig();
 void doPidOutputRange();
 void doPidConfigure();
 void doPidClear();

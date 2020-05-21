@@ -16,6 +16,7 @@
 #include "adc/adc.h"
 #include "power/power_reg.h"
 #include "board/mpins.h"
+#include "stdint.h"
 
 /*
 enum gains      { GAIN_1X = 0x00, GAIN_2X, GAIN_4X, GAIN_8X, GAIN_16X, GAIN_DIV2 };
@@ -31,7 +32,8 @@ uint32_t period = 25;           // 25ms for 10Hz Период опроса да�
 uint32_t ts;                    // таймер
 
   // Данные аппаратной поддержки
-constexpr uint16_t u_divider = (uint16_t)((39000 + 2200) * 0x100 / 2200); 
+constexpr uint16_t  u_divide = (uint16_t)((39000 + 2200) * 0x100 / 2200);   // Заводской (R+R)/R << 16
+uint16_t u_factor = u_divide;     // Корректированный, по умолчанию - заводской
 
   // Данные АЦП
 uint16_t adcVoltage = 0x0000;
@@ -43,7 +45,7 @@ uint16_t adcCelsius = 0x0000;
 int16_t voltage     = 0x0064;     //  0.10V
 int16_t current     = 0xfc17;     // -1.00A
 int16_t reserve     = 0x0000;
-float celsius       = 25.0f;      // +25.00
+float   celsius     = 25.0f;      // +25.00
 int16_t celsiusHex  = 0x09c4;     // +25.00
 
 
@@ -51,7 +53,7 @@ int16_t celsiusHex  = 0x09c4;     // +25.00
 uint8_t  prbReference[] = { 0x00, 0x00, 0x01, 0x00 };             // 02 - VCC1  01 - VCC0;
 uint8_t  prbGain[]      = { 0x00, 0x02, 0x00, 0x00 };             // 05 - DIV2  00 - X1 ;
 int16_t  prbOffset[]    = { 0x0000, 0x0000, 0x0000, 0x0000 };     // Приборные смещения
-uint16_t prbDivider[]   = { u_divider, 0x03ad, 0x0000, 0x0000 };  // Коэффициенты преобразования
+uint16_t prbFactor[]    = { u_factor, 0x03ad, 0x0000, 0x0000 };   // Коэффициенты преобразования
 
 // comm 52
 uint8_t adcBits   [] = { 0x01, 0x01, 0x00, 0x01 };  // 0x00(12), 0x01(16), 0x02(10), 0x03(8)
@@ -64,25 +66,29 @@ uint8_t adcRefComp[] = { 0x01, 0x01, 0x00, 0x00 };  // 0x00, 0x01  - Резер�
 uint8_t refComp = 0x01; 
 
 // Опорные напряжения (в милливольтах), выбор по prbReference[]
-uint16_t reference[] = { 1000u, 2230u, 1650u, 2540u, 2540u };
+uint16_t reference[] = { 1100u, 2230u, 1650u, 2540u, 2540u };
 
 // Усиление как коэффициент, выбор по выбор по prbGain[]
 uint16_t gain[] = { 1000u, 2000u, 4000u, 8000u, 16000u, 500u };
+
+// Максимальное значение ADC после автоматической обработки
+constexpr uint16_t maxVal = 4096;
 
 // comm 53
 // offsetCorr = 
 
 // gainCorr   = 
 
-// MF52AT MF52 B 3950 NTC термистор 2% 10 kOm 
-//constexpr float reference_resistance = 10000.0f;    // 10kOm 1%
-//constexpr float nominal_resistance   = 10000.0f;    // 10kOm 2%
-
-uint16_t refRes = 10000;  // 10k  последовательный
-uint16_t nomRes = 10000;  // 10k  номинал
-
+// Параметры термистора MF52B 3950 NTC 10 kOm
+constexpr float reference_resistance = 10000.0f;    // 10kOm
+constexpr float nominal_resistance   = 10000.0f;    // 10kOm
 constexpr float nominal_temperature  =    25.0f;
 constexpr float b_value              =  3950.0f;
+
+// Они же, по факту откорректированные. По умолчанию - заводские
+uint16_t refRes = reference_resistance;   // 10k  последовательный
+uint16_t nomRes = nominal_resistance;     // 10k  номинал
+
 
 float readSteinhart( const int adc );
 
@@ -101,7 +107,7 @@ void initAdc(uint8_t n)
 
 int16_t convMv(uint16_t adc, uint8_t prb)
 {
-  uint16_t maxVal = 4096;
+  //uint16_t maxVal = 4096;
   uint16_t ref = reference[ prb ];
   //return (uint16_t)(adc * ref / maxVal);  // * 16;
   return (adc / maxVal) * ref;  // * 16;
@@ -144,7 +150,8 @@ void doMeasure()
       //voltage = (int16_t)( adcVoltage * 1000 / 4096 ) / 2;
       //voltage = convertToValue(adcVoltage, true);
     //voltage = adcVoltage;   //averaging(adcVoltage, prb);
-    voltage = (convMv( adcVoltage, prb ) * prbDivider  [prb]) / 0x100 - prbOffset[prb];
+    //voltage = (convMv( adcVoltage, prb ) * prbFactor  [prb]) / 0x100 - prbOffset[prb];
+    voltage = (( adcVoltage * reference[prb] / maxVal ) * prbFactor[prb]) / 0x100 - prbOffset[prb];
 
       #ifdef DEBUG_ADC
         //SerialUSB.print("V= "); SerialUSB.println(voltage, 2);
@@ -157,7 +164,7 @@ void doMeasure()
       adcCurrent = analogDifferentialRaw( MPins::shunt_plus_mux, MPins::shunt_minus_mux );    // 6, 7
       //current = adcCurrent * 3.3 / 2048.0;
       //current = convertToValue(adcCurrent, true);
-      current = (convMv( adcCurrent, prb ) * prbDivider  [prb] ) / 0x100 ;
+      current = (convMv( adcCurrent, prb ) * prbFactor  [prb] ) / 0x100 ;
 
       
       #ifdef DEBUG_ADC

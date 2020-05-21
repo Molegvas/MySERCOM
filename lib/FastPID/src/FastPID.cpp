@@ -5,7 +5,8 @@
 FastPID::~FastPID() {
 }
 
-void FastPID::clear() {
+void FastPID::clear() 
+{
   _last_sp = 0; 
   _last_out = 0;
   _sum = 0; 
@@ -54,6 +55,15 @@ bool FastPID::setOutputRange(int16_t min, int16_t max)
 
 bool FastPID::configure(float kp, float ki, float kd, float hz, int bits, bool sign) {
   clear();
+  _cfg_err = false;
+  setCoefficients(kp, ki, kd, hz);
+  setOutputConfig(bits, sign);
+  return ! _cfg_err; 
+}
+
+bool FastPID::replaceConfig(float kp, float ki, float kd, float hz, int bits, bool sign) 
+{
+  //clear();
   _cfg_err = false;
   setCoefficients(kp, ki, kd, hz);
   setOutputConfig(bits, sign);

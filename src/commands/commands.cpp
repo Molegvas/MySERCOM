@@ -37,10 +37,10 @@ bool _reserve2Status        = false;  // резерв 2
 
 
     // ПИД-регулятор
-static constexpr uint8_t cmd_pid_configure        = 0x40; // kp, ki, kd, hz, bits, sign 
-static constexpr uint8_t cmd_pid_coefficients     = 0x41; // kp, ki, kd, hz 
+static constexpr uint8_t cmd_pid_configure        = 0x40; // mode, kp, ki, kd, sign 
+//static constexpr uint8_t cmd_pid_coefficients     = 0x41; // kp, ki, kd, hz 
 static constexpr uint8_t cmd_pid_output_range     = 0x42; // min, max
-static constexpr uint8_t cmd_pid_output_config    = 0x43; // bits, sign
+//static constexpr uint8_t cmd_pid_output_config    = 0x43; // bits, sign
 static constexpr uint8_t cmd_pid_clear            = 0x44; 
 
 static constexpr uint8_t cmd_pid_stop_go          = 0x45; // стоп-пауза-пуск 
@@ -137,9 +137,9 @@ void doCommand()
 
         // Команды работы с регуляторами
       case cmd_pid_configure:             doPidConfigure();           break;  // 0x40
-      case cmd_pid_coefficients:          doPidCoefficients();        break;  // 0x41
+      //case cmd_pid_coefficients:          doPidCoefficients();        break;  // 0x41
       case cmd_pid_output_range:          doPidOutputRange();         break;  // 0x42
-      case cmd_pid_output_config:         doPidOutputConfig();        break;  // 0x43
+      //case cmd_pid_output_config:         doPidOutputConfig();        break;  // 0x43
       case cmd_pid_clear:                 doPidClear();               break;  // 0x44
       case cmd_pid_test:                  doPidTest();                break;  // 0x46
 

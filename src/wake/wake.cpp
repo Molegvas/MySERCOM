@@ -319,7 +319,8 @@ float getF16(int i)
 {
   uint16_t par  = (rxDat[i] << 8) & 0xff00;
   par |= rxDat[i+1];
-  return (float)(par / 256); 
+  //return (float)(par / 256); 
+  return (float)par / 100.0f; 
 }
 
 void testReply( int rxNbt )

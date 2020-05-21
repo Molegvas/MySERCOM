@@ -41,19 +41,45 @@ extern bool _pidStatus;             // управление регуляторо
 // extern bool _upgradeStatus;         // обновление
 // extern bool _reserve2Status;        // резерв 2
 
-float kp =  0.1;
-float ki =  0.5;
-float kd =  0.0;
+  // Данные АЦП
+extern uint16_t adcVoltage;
+extern uint16_t adcCurrent;
+  // Пересчитанные в физические величины - mV, mA
+extern int16_t voltage;
+extern int16_t current;
+
+  // Опорное напряжение ADC в милливольтах
+constexpr uint16_t avcc = 3300;
+
+  // Приборные диапазоны задания напряжения и токов
+constexpr uint16_t volt_min       =  2000;   //  2.0 в
+constexpr uint16_t volt_max       = 20000;   // 20.0 в
+constexpr uint16_t curr_ch_min    =    50;   //  0.05 А
+constexpr uint16_t curr_ch_max    = 12000;   // 12.0 А
+constexpr uint16_t curr_disch_min =    50;   //  0.05 А
+constexpr uint16_t curr_disch_max =  3000;   //  3.0 А
+
+// Заводские параметры регулирования для всех режимов
+constexpr float _kp =  0.1;  
+constexpr float _ki =  0.5;
+constexpr float _kd =  0.0;
 float hz = 10.0; 
 int output_bits = 10; // Set analog out resolution to max, 10-bits
-bool output_signed = false; 
-//extern uint32_t period;       // Период для автомата измерений, пид под номером 2, всего 4
+//bool output_signed = false; 
+
+// Вариант с разными режимами (mode) регулирования напряжения,
+// тока заряда, тока разряда и резервая позиция (дефолтные значения)
+// Для тестирования при непосредственном соединении входа с выходом DAC  kp = 0.02
+float kP[]     = {  0.02,  0.02,  0.02,   _kp };  
+float kI[]     = {   _ki,   _ki,   _ki,   _ki };
+float kD[]     = {   _kd,   _kd,   _kd,   _kd };
+bool signOut[] = { false, false, false, false };
 
 uint16_t output     = 0x0000;
 uint8_t  pidMode    = 0;        // 0-1-2 - тестирование: задать напряжение, ток заряда или ток разряда
-// pidReference
+// pidReference - без выбора, всегда AVDD
 
-FastPID myPID( kp, ki, kd, hz, output_bits, output_signed );
+FastPID myPID( kP[0], kI[0], kD[0], hz, output_bits, signOut[0] );  // Voltage control mode
 
 uint16_t setpoint = 512;
 uint16_t feedback = 0x0100;
@@ -78,12 +104,14 @@ void doPid()
       uint32_t before = micros();
     #endif
 
+//feedback = adcVoltage;
+feedback = voltage;
     output = myPID.step(setpoint, feedback);
     dacWrite10bit( output & 0x3ff );                 // Задать код
 
     #ifdef DEBUG_PID
       uint32_t after = micros();
-      SerialUSB.print("runtime: "); SerialUSB.print(after - before); 
+      //SerialUSB.print("runtime: "); SerialUSB.print(after - before); 
       SerialUSB.print(" sp: ");     SerialUSB.print(setpoint);     
       SerialUSB.print(" fb: ");     SerialUSB.print(feedback);
       SerialUSB.print(" out: ");    SerialUSB.println(output); 
@@ -127,6 +155,13 @@ bool configure( float kp, float ki, float kd, float hz, int bits, bool sign )
   return myPID.configure( kp, ki, kd, hz, bits, sign );
 }
 
+bool replaceConfigure( float kp, float ki, float kd, float hz, int bits, bool sign )
+{
+  return myPID.replaceConfig( kp, ki, kd, hz, bits, sign );
+}
+
+
+
 void clear()
 {
   return myPID.clear();
@@ -163,37 +198,44 @@ void doSetVoltage()
 {
   if( rxNbt == 5 )
   {
-    txDat[0] = 0x00;                        // Очистить сообщение об ошибках
+    txDat[0] = 0x00;                      // Очистить сообщение об ошибках
 
-    _pidStatus         = rxDat[0] & 0x01;   // Регулятор отключить или включить
-    uint16_t voltage62 = get16(1);          // Заданное напряжение в милливольтах
-    uint16_t factor62  = get16(3);          // Коэффициент преобразования в код ADC
-    uint16_t value = voltage62 / factor62;
-
-    if(value >= 0x0400)                     // Если за пределом
+    _pidStatus       = rxDat[0] & 0x01;   // Регулятор отключить или включить
+    uint16_t voltage = get16(1);          // Заданное напряжение в милливольтах
+    uint16_t factor  = get16(3);          // Коэффициент преобразования в код ADC
+    
+    if(voltage < volt_min)                // Если за пределом
     {
-      value = 0x3ff;                        // Задать максимум
-      txDat[0] = 0x01;                      // и сообщить об ошибке
+      voltage = volt_min;                 // Задать минимум
+      txDat[0] = 0x01;                    // и сообщить об ошибке
+    }
+
+    if(voltage > volt_max)                // Если за пределом
+    {
+      voltage = volt_max;                 // Задать максимум
+      txDat[0] = 0x01;                    // и сообщить об ошибке
     } 
 
+    uint16_t value = voltage / factor;
+
     // Задать условия, установить напряжение 
-    _chargeStatus    = true;                // заряд, иное невозможно
-    _switchStatus    = true;                // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
-    _converterStatus = true;                // преобразователь включить ( off_pin =  2 D4  PA14 )
+    _chargeStatus    = true;              // заряд, иное невозможно
+    _switchStatus    = true;              // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
+    _converterStatus = true;              // преобразователь включить ( off_pin =  2 D4  PA14 )
 
     if(_pidStatus)
     {
-      setpoint = value;
+      setpoint = value / 4;   // vSetpoint
       // запустить
     }
     else
     {
-      dacWrite10bit( value );                 // Задать код
+      dacWrite10bit( value );              // Задать код
     }
 
-    // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC
-    txDat[1] = ( value >> 8) & 0xFF;        // Hi
-    txDat[2] =   value & 0xFF;              // Lo
+    // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC или setpoint
+    txDat[1] = ( value >> 8) & 0xFF;       // Hi
+    txDat[2] =   value & 0xFF;             // Lo
     txNbt = 3;
     txReplay( txNbt, txDat[0] ); 
   }
