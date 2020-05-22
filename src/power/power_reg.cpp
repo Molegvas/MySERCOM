@@ -59,60 +59,68 @@ constexpr uint16_t curr_ch_max    = 12000;   // 12.0 А
 constexpr uint16_t curr_disch_min =    50;   //  0.05 А
 constexpr uint16_t curr_disch_max =  3000;   //  3.0 А
 
-// Заводские параметры регулирования для всех режимов
-constexpr float _kp =  0.1;  
-constexpr float _ki =  0.5;
-constexpr float _kd =  0.0;
-float hz = 10.0; 
-int output_bits = 10; // Set analog out resolution to max, 10-bits
+// Дефолтные параметры регулирования для всех режимов
+constexpr float _kp       =  0.1f;  
+constexpr float _ki       =  0.5f;
+constexpr float _kd       =  0.0f;
+constexpr float _hz       = 10.0f;
+constexpr uint16_t _bits  = 10;
+constexpr uint16_t _min   = 0x0000;
+constexpr uint16_t _max   = 0x03ff;
+
+//float hz = 10.0; 
+//int output_bits = 10; // Set analog out resolution to max, 10-bits
 //bool output_signed = false; 
 
-// Вариант с разными режимами (mode) регулирования напряжения,
-// тока заряда, тока разряда и резервая позиция (дефолтные значения)
+// Варианты настройки для разных режимов (modes) регулирования 
+// напряжения, тока заряда, тока разряда и резервая позиция (дефолтные значения)
+// Для разряда (режим D) может использоваться другой экхемпляр регулятора
+// Разрядность (10бит) и опорное (AVCC) DAC заданы жестко, как и частота (hz=10Hz) 
+enum mode { U = 0, I, D, R };
+
 // Для тестирования при непосредственном соединении входа с выходом DAC  kp = 0.02
-float kP[]     = {  0.02,  0.02,  0.02,   _kp };  
-float kI[]     = {   _ki,   _ki,   _ki,   _ki };
-float kD[]     = {   _kd,   _kd,   _kd,   _kd };
-bool signOut[] = { false, false, false, false };
+float kP[]          = {  0.02,  0.02,  0.02,   _kp };  
+float kI[]          = {   _ki,   _ki,   _ki,   _ki };
+float kD[]          = {   _kd,   _kd,   _kd,   _kd };
+bool signOut[]      = { false, false, false, false };
+uint16_t minOut[]   = {  _min,  _min,  _min,  _min };
+uint16_t maxOut[]   = {  _max,  _max,  _max,  _max };
+uint16_t setpoint[] = { 0x0000 };
 
 uint16_t output     = 0x0000;
 uint8_t  pidMode    = 0;        // 0-1-2 - тестирование: задать напряжение, ток заряда или ток разряда
 // pidReference - без выбора, всегда AVDD
 
-FastPID myPID( kP[0], kI[0], kD[0], hz, output_bits, signOut[0] );  // Voltage control mode
+//FastPID myPID( kP[U], kI[U], kD[U], _hz, output_bits, signOut[U] );  // Voltage control mode
+FastPID myPID( kP[U], kI[U], kD[U], _hz, _bits, signOut[U] );  // Voltage control mode
 
-uint16_t setpoint = 512;
+//uint16_t setpoint = 512;
 uint16_t feedback = 0x0100;
 
 void initPid()
 {
-  analogWriteResolution( output_bits );
+  //analogWriteResolution( output_bits );
+  analogWriteResolution( _bits );
 }
 
-// void initHz(float hz)
-// {
-//   period = (uint32_t)( (1000 / hz) / 4 );
-// }
 
 void doPid()
 {
   if( _pidStatus )
   {
     #ifdef DEBUG_PID
-      //uint32_t before;
-      //uint32_t after; 
-      uint32_t before = micros();
+      //uint32_t before = micros();
     #endif
 
 //feedback = adcVoltage;
 feedback = voltage;
-    output = myPID.step(setpoint, feedback);
+    output = myPID.step(setpoint[U], feedback);
     dacWrite10bit( output & 0x3ff );                 // Задать код
 
     #ifdef DEBUG_PID
-      uint32_t after = micros();
+      //uint32_t after = micros();
       //SerialUSB.print("runtime: "); SerialUSB.print(after - before); 
-      SerialUSB.print(" sp: ");     SerialUSB.print(setpoint);     
+      SerialUSB.print(" sp: ");     SerialUSB.print(setpoint[U]);     
       SerialUSB.print(" fb: ");     SerialUSB.print(feedback);
       SerialUSB.print(" out: ");    SerialUSB.println(output); 
     #endif
@@ -225,7 +233,7 @@ void doSetVoltage()
 
     if(_pidStatus)
     {
-      setpoint = value / 4;   // vSetpoint
+      setpoint[U] = value / 4;   // vSetpoint
       // запустить
     }
     else

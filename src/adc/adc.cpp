@@ -27,8 +27,9 @@ enum references { INTREF  = 0x00, INTVCC0,INTVCC1, AREFA, AREFB };
 constexpr uint8_t numDat = 4;   // Количество аналоговых датчиков в системе 
 
   // Тайминг опроса датчиков
-extern float hz;                // 10Hz по умолчанию
-uint32_t period = 25;           // 25ms for 10Hz Период опроса датчика 25*4=100мс (10Гц)
+//extern float hz;                // 10Hz по умолчанию
+//uint32_t period = 25;           // 25ms for 10Hz Период опроса датчика 25*4=100мс (10Гц)
+uint16_t constexpr period = 25;   // 25ms for 10Hz Период опроса датчика 25*4=100мс (10Гц)
 uint32_t ts;                    // таймер
 
   // Данные аппаратной поддержки
@@ -131,7 +132,7 @@ int16_t convMv(uint16_t adc, uint8_t prb)
 // Циклический автомат последовательного опроса датчиков
 void doMeasure()
 {
-  period = (uint32_t)( (1000.0 / hz) / numDat );    // Может быть изменен в процессе?
+  //period = (uint32_t)( (1000.0 / hz) / numDat );    // Может быть изменен в процессе?
 
   if( millis() - ts >= period )
   { 
