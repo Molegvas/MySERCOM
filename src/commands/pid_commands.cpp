@@ -26,7 +26,7 @@ extern int   output_bits; // Set analog out resolution to max const?
 
 
 // предварительно ...
-extern bool     _pidStatus;
+extern bool     pidStatus;
 extern uint8_t  pidMode;
 extern uint16_t setpoint;
 
@@ -59,13 +59,13 @@ void doPidTest()
     
     if( err )
     {
-      _pidStatus = false;            // отключен
+      pidStatus = false;            // отключен
       pidMode   = 0;                // не выбран
       setpoint  = 0x00;             // не задано
     }
     else
     {
-      _pidStatus = false;            // PID-регулятор отключен
+      pidStatus = false;            // PID-регулятор отключен
       pidMode   = _pidMode;         // выбор канала регулирования
       setpoint  = _setpoint;        // установка выхода
     }
