@@ -76,13 +76,13 @@ constexpr uint16_t _max   = 0x03ff;
 enum mode { U = 0, I, D, R };
 
 // Для тестирования при непосредственном соединении входа с выходом DAC  kp = 0.02
-float kP[]          = {  0.02,  0.02,  0.02,   _kp };  
-float kI[]          = {   _ki,   _ki,   _ki,   _ki };
-float kD[]          = {   _kd,   _kd,   _kd,   _kd };
-bool signOut[]      = { false, false, false, false };
-uint16_t minOut[]   = {  _min,  _min,  _min,  _min };
-uint16_t maxOut[]   = {  _max,  _max,  _max,  _max };
-uint16_t setpoint[] = { 0x0000 };
+float kP[]          = {   0.02,   0.02,   0.02,    _kp };  
+float kI[]          = {    _ki,    _ki,    _ki,    _ki };
+float kD[]          = {    _kd,    _kd,    _kd,    _kd };
+bool signOut[]      = {  false,  false,  false,  false };
+uint16_t minOut[]   = {   _min,   _min,   _min,   _min };
+uint16_t maxOut[]   = {   _max,   _max,   _max,   _max };
+uint16_t setpoint[] = { 0x0000, 0x0000, 0x0000, 0x0000 };
 
 uint16_t output     = 0x0000;
 uint8_t  pidMode    = 0;        // 0-1-2 - тестирование: задать напряжение, ток заряда или ток разряда
@@ -118,7 +118,6 @@ void doPid()
 
 
     output = myPID.step(_setpoint, feedback);
-    dacWrite10bit( output & 0x3ff );                 // Задать код
 
     #ifdef DEBUG_PID
       //uint32_t after = micros();
@@ -127,6 +126,10 @@ void doPid()
       SerialUSB.print(" fb: ");     SerialUSB.print(feedback);
       SerialUSB.print(" out: ");    SerialUSB.println(output); 
     #endif
+
+    dacWrite10bit( output & 0x3ff );                 // Задать код
+
+
   }
   else
   {
@@ -204,109 +207,145 @@ void converterOff(bool on)
   digitalWrite( MPins::off_pin, !on );
 }
 
-  // 0x62 Задать напряжение в мВ и включить
+  //==================== 0x62 Задать напряжение в мВ и включить ===================
 void doSetVoltage()
 {
   if( rxNbt == 5 )
   {
     txDat[0] = 0x00;                      // Очистить сообщение об ошибках
 
-    pidStatus       = rxDat[0] & 0x01;   // Регулятор отключить или включить
-    uint16_t voltage = get16(1);          // Заданное напряжение в милливольтах
-    uint16_t factor  = get16(3);          // Коэффициент преобразования в код ADC
+    bool _pidStatus    = rxDat[0] & 0x01; // Регулятор отключить или включить
+    uint16_t _setpoint = get16(1);        // Заданное напряжение в милливольтах
+    uint16_t _factor   = get16(3);        // Коэффициент преобразования в код ADC
     
-    if(voltage < volt_min)                // Если за пределом
+    if(_pidStatus)  // Если задаются милливольты
     {
-      voltage = volt_min;                 // Задать минимум
-      txDat[0] = 0x01;                    // и сообщить об ошибке
+      if(_setpoint < volt_min)            // Если за пределом
+      {
+        _setpoint = volt_min;             // Задать минимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      }
+
+      if(_setpoint > volt_max)            // Если за пределом
+      {
+        _setpoint = volt_max;             // Задать максимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      } 
+    }
+    else  // если задается код
+    {
+      if(_setpoint < _min)                // Если за пределом
+      {
+        _setpoint = _min;                 // Задать минимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      }
+
+      if(_setpoint > _max)                // Если за пределом
+      {
+        _setpoint = _max;                 // Задать максимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      } 
     }
 
-    if(voltage > volt_max)                // Если за пределом
-    {
-      voltage = volt_max;                 // Задать максимум
-      txDat[0] = 0x01;                    // и сообщить об ошибке
-    } 
-
-    uint16_t value = voltage / factor;
+    uint16_t _value = _setpoint / _factor;
 
     // Задать условия, установить напряжение 
-    chargeStatus    = true;              // заряд, иное невозможно
-    switchStatus    = true;              // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
-    converterStatus = true;              // преобразователь включить ( off_pin =  2 D4  PA14 )
+    chargeStatus    = true;               // заряд, иное невозможно
+    switchStatus    = true;               // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
+    converterStatus = true;               // преобразователь включить ( off_pin =  2 D4  PA14 )
+    pidStatus = _pidStatus;
 
-    if(pidStatus)
+    if(pidStatus)                         // Дело вкуса:
     {
-      setpoint[U] = value / 4;   // vSetpoint
+      setpoint[U] = _value; // / 4;           // милливольты так удобнее задавать (0 ... 20 000), а
       // запустить
     }
     else
     {
-      dacWrite10bit( value );              // Задать код
+      dacWrite10bit( _value );             // код для DAC в 10-разрядном виде (0x0000 ... 0x3ff)
     }
 
     // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC или setpoint
-    txDat[1] = ( value >> 8) & 0xFF;       // Hi
-    txDat[2] =   value & 0xFF;             // Lo
+    txDat[1] = ( _value >> 8) & 0xFF;      // Hi
+    txDat[2] =   _value & 0xFF;            // Lo
     txNbt = 3;
     txReplay( txNbt, txDat[0] ); 
   }
   else
   {
-    txReplay(1, err_tx);                    // ошибка протокола
+    txReplay(1, err_tx);                   // ошибка протокола
   }
 } // !doSetVoltage()
 
-  // 0x63 задать ток в мА и включить
+  //==================== 0x63 задать ток в мА и включить ===================
 void doSetCurrent()
 {
   if( rxNbt == 5 )
   {
     txDat[0] = 0x00;                      // Очистить сообщение об ошибках
 
-    pidStatus       = rxDat[0] & 0x01;   // Регулятор отключить или включить
-    uint16_t _setpoint = get16(1);          // Заданный ток в миллиамперах
-    uint16_t factor  = get16(3);          // Коэффициент преобразования в код ADC
+    bool _pidStatus    = rxDat[0] & 0x01; // Регулятор отключить или включить
+    uint16_t _setpoint = get16(1);        // Заданный ток в миллиамперах
+    uint16_t _factor   = get16(3);        // Коэффициент преобразования в код ADC
     
-    if(_setpoint < curr_ch_min)             // Если за пределом
+    if(_pidStatus)  // Если задаются миллиамперы
     {
-      _setpoint = curr_ch_min;              // Задать минимум
-      txDat[0] = 0x01;                    // и сообщить об ошибке
+      if(_setpoint <= curr_ch_min)         // Если за пределом
+      {
+        _setpoint = curr_ch_min;          // Задать минимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      }
+
+      if(_setpoint >= curr_ch_max)         // Если за пределом
+      {
+        _setpoint = curr_ch_max;          // Задать максимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      }
+    } 
+    else
+    {
+      if(_setpoint <= _min)                // Если за пределом
+      {
+        _setpoint = _min;                 // Задать минимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      }
+
+      if(_setpoint >= _max)                // Если за пределом
+      {
+        _setpoint = _max;                 // Задать максимум
+        txDat[0] = 0x01;                  // и сообщить об ошибке
+      } 
     }
 
-    if(_setpoint > curr_ch_max)             // Если за пределом
+    uint16_t _value = _setpoint / _factor;
+
+    // Задать условия, установить ток 
+    chargeStatus    = true;               // заряд, иное невозможно
+    switchStatus    = true;               // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
+    converterStatus = true;               // преобразователь включить ( off_pin =  2 D4  PA14 )
+    pidStatus = _pidStatus;
+
+    if(_pidStatus)
     {
-      _setpoint = curr_ch_max;              // Задать максимум
-      txDat[0] = 0x01;                    // и сообщить об ошибке
-    } 
-
-    uint16_t value = current / factor;
-
-    // Задать условия, установить напряжение 
-    chargeStatus    = true;              // заряд, иное невозможно
-    switchStatus    = true;              // коммутатор включить     ( foff_pin = 21 D21 PA23 ) 
-    converterStatus = true;              // преобразователь включить ( off_pin =  2 D4  PA14 )
-
-    if(pidStatus)
-    {
-      setpoint[I] = value / 4;
+      setpoint[I] = _value;
       // запустить
     }
     else
     {
-      dacWrite10bit( value );              // Задать код
+      dacWrite10bit( _value );            // Задать код
     }
 
     // Подготовить 3 байта ответа: 0 - нет ошибок и код, который ушел в ADC или setpoint
-    txDat[1] = ( value >> 8) & 0xFF;       // Hi
-    txDat[2] =   value & 0xFF;             // Lo
+    txDat[1] = ( _value >> 8) & 0xFF;      // Hi
+    txDat[2] =   _value & 0xFF;            // Lo
     txNbt = 3;
     txReplay( txNbt, txDat[0] ); 
   }
   else
   {
-    txReplay(1, err_tx);                    // ошибка протокола
+    txReplay(1, err_tx);                   // ошибка протокола
   }
-}
+} // !doSetCurrent()
 
 
 
