@@ -1,6 +1,6 @@
 Partlist
 
-Exported from D21_v38.sch at 27.05.2020 8:44
+Exported from D21_v39.sch at 29.05.2020 8:06
 
 EAGLE Version 7.3.0 Copyright (c) 1988-2015 CadSoft
 
@@ -72,14 +72,12 @@ C55      100nF X7R                C-EUC0805                     C0805           
 CH                                WIREPAD1,6/0,8                1,6/0,8               wirepad                4
 DAC                               WIREPAD1,6/0,8                1,6/0,8               wirepad                4
 DGND                              WIREPAD4,16O1,6               4,16O1,6              wirepad                1
-DGND1                             WIREPAD4,16O1,6               4,16O1,6              wirepad                1
 DIN                               WIREPAD1,6/0,8                1,6/0,8               wirepad                4
 DVT1     PDTA123ET                MUN2113T1                     SC59-BEC              transistor-pnp         3
 DVT2     PDTD123ET                BCR108                        SOT23-BEC             digital-transistors    3
 DVT3     PDTD123ET                BCR108                        SOT23-BEC             digital-transistors    3
 FB1      BLM21AG221SN1D           FERRITE0805                   0805                  microbuilder_v2        4
 FOFF                              WIREPAD1,6/0,8                1,6/0,8               wirepad                4
-IO4                               TESTPOINTROUND1MM             TESTPOINT_ROUND_1MM   microbuilder_v2        3
 IO19                              TESTPOINTROUND1MM             TESTPOINT_ROUND_1MM   microbuilder_v2        3
 IO23                              TESTPOINTROUND1MM             TESTPOINT_ROUND_1MM   microbuilder_v2        3
 L1       PLA10AN1522R0R2          DK_Q921                       DK30                  Q921                   1
@@ -87,6 +85,7 @@ L2       SD74R-221                DR74                          DR74            
 LED      5mm RGB LED common anode 5MMRGBLED                     LED5MMRGB             led_rgb                3
 LEDG     LED3MM-GREEN             LED3MM-H7MMG                  LED3MM-H7MMG          moro4                  2
 LEDR     LED3MM-RED               LED3MM-H7MMR                  LED3MM-H7MMR          moro4                  2
+MI                                WIREPAD4,16O1,6               4,16O1,6              wirepad                1
 O1                                WIREPAD1,6/0,8                1,6/0,8               wirepad                1
 OPTV1    K10104C                  SFH618A-3X007                 SMD4-7                optocoupler            1
 OPTV2    K10104C                  SFH618A-3X007                 SMD4-7                optocoupler            1
@@ -98,7 +97,9 @@ PA28                              TESTPOINTROUND1MM             TESTPOINT_ROUND_
 PAD1                              SMD2                          SMD1,27-2,54          wirepad                1
 PAD2                              SMD2                          SMD1,27-2,54          wirepad                1
 PAD3                              SMD2                          SMD1,27-2,54          wirepad                1
+PAD4                              WIREPAD4,16O1,6               4,16O1,6              wirepad                1
 PG                                WIREPAD1,6/0,8                1,6/0,8               wirepad                2
+PL                                WIREPAD4,16O1,6               4,16O1,6              wirepad                1
 R1       15S-1.3                  15S-1.3                       15S-1.3               Q921                   1
 R2       15S-1.3                  15S-1.3                       15S-1.3               Q921                   1
 R3       15S-1.3                  15S-1.3                       15S-1.3               Q921                   1
