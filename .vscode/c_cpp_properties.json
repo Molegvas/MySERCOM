@@ -75,7 +75,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=40303",
+                "PLATFORMIO=40304",
                 "ARDUINO_SAMD_ZERO",
                 "ARDUINO_ARCH_SAMD",
                 "__SAMD21G18A__",
